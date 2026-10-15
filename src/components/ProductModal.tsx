@@ -567,7 +567,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               )}
             </div>
 
-            {/* CTAs Box: Perfectly aligned on a single horizontal row on mobile & desktop */}
+            {/* CTAs Box: 3 buttons with identical dimensions (equal 1/3 width, h-12) and clear labels */}
             <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-row items-center gap-2 sm:gap-3 w-full">
               {onOpenChatWithProduct && (
                 <button
@@ -576,21 +576,24 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                     onClose();
                     onOpenChatWithProduct(product);
                   }}
-                  className="w-12 h-12 shrink-0 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 rounded-2xl hover:bg-emerald-100 dark:hover:bg-emerald-900/40 flex items-center justify-center transition-colors cursor-pointer shadow-xs active:scale-95"
+                  className="flex-1 min-w-0 h-12 inline-flex items-center justify-center gap-1.5 px-2 sm:px-4 text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-2xl transition-all cursor-pointer shadow-md shadow-emerald-600/20 active:scale-98"
                   title="Discuter de ce produit sur WhatsApp"
                   aria-label="Discussion WhatsApp"
                 >
-                  <MessageCircle className="w-5 h-5" />
+                  <MessageCircle className="w-4 h-4 shrink-0" />
+                  <span className="hidden sm:inline">Discuter</span>
+                  <span className="sm:hidden truncate">Chat</span>
                 </button>
               )}
 
               <button
                 onClick={handleAddToCart}
-                className={`flex-1 min-w-0 h-12 inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-5 text-xs sm:text-sm font-bold rounded-2xl transition-all cursor-pointer ${
+                className={`flex-1 min-w-0 h-12 inline-flex items-center justify-center gap-1.5 px-2 sm:px-4 text-xs sm:text-sm font-bold rounded-2xl transition-all cursor-pointer ${
                   addedSuccess
                     ? 'bg-emerald-600 text-white shadow-md'
-                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                    : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700 border border-zinc-200 dark:border-zinc-700/60'
                 }`}
+                title="Ajouter au panier"
               >
                 {addedSuccess ? (
                   <>
@@ -610,7 +613,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 onClick={() => {
                   onBuyNow(product, currentVariant, quantity);
                 }}
-                className="flex-1 min-w-0 h-12 inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-5 text-xs sm:text-sm font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-2xl transition-all cursor-pointer shadow-md shadow-orange-600/20 active:scale-98"
+                className="flex-1 min-w-0 h-12 inline-flex items-center justify-center gap-1.5 px-2 sm:px-4 text-xs sm:text-sm font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-2xl transition-all cursor-pointer shadow-md shadow-orange-600/20 active:scale-98"
+                title="Acheter maintenant"
               >
                 <Zap className="w-4 h-4 shrink-0" />
                 <span className="hidden sm:inline">Acheter maintenant</span>
