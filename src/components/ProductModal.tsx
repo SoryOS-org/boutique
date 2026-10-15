@@ -567,8 +567,8 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               )}
             </div>
 
-            {/* CTAs Box */}
-            <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row items-center gap-3">
+            {/* CTAs Box: Perfectly aligned on a single horizontal row on mobile & desktop */}
+            <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-row items-center gap-2 sm:gap-3 w-full">
               {onOpenChatWithProduct && (
                 <button
                   type="button"
@@ -576,8 +576,9 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                     onClose();
                     onOpenChatWithProduct(product);
                   }}
-                  className="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 rounded-2xl hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors cursor-pointer shrink-0"
+                  className="w-12 h-12 shrink-0 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 rounded-2xl hover:bg-emerald-100 dark:hover:bg-emerald-900/40 flex items-center justify-center transition-colors cursor-pointer shadow-xs active:scale-95"
                   title="Discuter de ce produit sur WhatsApp"
+                  aria-label="Discussion WhatsApp"
                 >
                   <MessageCircle className="w-5 h-5" />
                 </button>
@@ -585,7 +586,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
 
               <button
                 onClick={handleAddToCart}
-                className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-2xl transition-all cursor-pointer ${
+                className={`flex-1 min-w-0 h-12 inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-5 text-xs sm:text-sm font-bold rounded-2xl transition-all cursor-pointer ${
                   addedSuccess
                     ? 'bg-emerald-600 text-white shadow-md'
                     : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700'
@@ -593,13 +594,14 @@ export const ProductModal: React.FC<ProductModalProps> = ({
               >
                 {addedSuccess ? (
                   <>
-                    <Check className="w-4 h-4" />
-                    <span>Ajouté au panier !</span>
+                    <Check className="w-4 h-4 shrink-0" />
+                    <span className="truncate">Ajouté !</span>
                   </>
                 ) : (
                   <>
-                    <ShoppingBag className="w-4 h-4 text-orange-600 dark:text-orange-400" />
-                    <span>Ajouter au panier</span>
+                    <ShoppingBag className="w-4 h-4 shrink-0 text-orange-600 dark:text-orange-400" />
+                    <span className="hidden sm:inline">Ajouter au panier</span>
+                    <span className="sm:hidden truncate">Panier</span>
                   </>
                 )}
               </button>
@@ -608,10 +610,11 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 onClick={() => {
                   onBuyNow(product, currentVariant, quantity);
                 }}
-                className="flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-2xl transition-all cursor-pointer shadow-md shadow-orange-600/20 active:scale-98"
+                className="flex-1 min-w-0 h-12 inline-flex items-center justify-center gap-1.5 px-2.5 sm:px-5 text-xs sm:text-sm font-bold text-white bg-orange-600 hover:bg-orange-700 rounded-2xl transition-all cursor-pointer shadow-md shadow-orange-600/20 active:scale-98"
               >
-                <Zap className="w-4 h-4" />
-                <span>Acheter maintenant</span>
+                <Zap className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">Acheter maintenant</span>
+                <span className="sm:hidden truncate">Acheter</span>
               </button>
             </div>
 
