@@ -1,0 +1,60 @@
+{
+  "entities": {
+    "user": {
+      "title": "User",
+      "description": "User profile and presence information",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "description": "Unique identifier (UID)" },
+        "displayName": { "type": "string", "maxLength": 100, "description": "Display name" },
+        "status": { "type": "string", "enum": ["online", "offline"], "description": "Current presence status" },
+        "lastSeen": { "type": "string", "format": "date-time", "description": "Last seen timestamp" }
+      },
+      "required": ["id", "displayName", "status"]
+    },
+    "message": {
+      "title": "Message",
+      "description": "A chat message",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "description": "Message ID" },
+        "chatId": { "type": "string", "maxLength": 128, "description": "ID of the chat" },
+        "senderId": { "type": "string", "maxLength": 128, "description": "Sender User ID" },
+        "senderName": { "type": "string", "maxLength": 100, "description": "Sender display name" },
+        "senderAvatar": { "type": "string", "maxLength": 50, "description": "Avatar initials or icon" },
+        "avatarBg": { "type": "string", "maxLength": 50, "description": "Avatar background color class" },
+        "text": { "type": "string", "maxLength": 2000, "description": "Message content" },
+        "timestamp": { "type": "string", "description": "Display or ISO timestamp" },
+        "status": { "type": "string", "enum": ["sent", "delivered", "read"], "description": "Delivery status" }
+      },
+      "required": ["id", "chatId", "senderId", "text"]
+    },
+    "chat": {
+      "title": "Chat",
+      "description": "A conversation between users",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "description": "Chat ID" },
+        "name": { "type": "string", "maxLength": 100, "description": "Chat name" },
+        "participants": { "type": "array", "description": "Array of participant User IDs" },
+        "lastMessage": { "type": "string", "maxLength": 2000, "description": "Last message text" },
+        "lastMessageTime": { "type": "string", "maxLength": 50, "description": "Last message time string" }
+      },
+      "required": ["id", "participants"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": "user",
+      "description": "User presence documents"
+    },
+    "chats/{chatId}": {
+      "schema": "chat",
+      "description": "Chat documents"
+    },
+    "chats/{chatId}/messages/{messageId}": {
+      "schema": "message",
+      "description": "Message subcollection"
+    }
+  }
+}
