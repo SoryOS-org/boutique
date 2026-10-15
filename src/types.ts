@@ -139,3 +139,19 @@ export interface ChatMessage {
   };
   reactions?: Record<string, number>;
 }
+
+export type ToastType = 'cart' | 'favorite_add' | 'favorite_remove' | 'order' | 'info' | 'coins' | 'coupon';
+
+export interface ToastNotification {
+  id: string;
+  type: ToastType;
+  title: string;
+  message?: string;
+  image?: string;
+  badge?: string;
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
+  durationMs?: number;
+}

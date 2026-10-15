@@ -22,10 +22,11 @@ import { AboutModal } from './components/AboutModal';
 import { FacebookAdsModal } from './components/FacebookAdsModal';
 import { CommunityChatModal } from './components/CommunityChatModal';
 import { ProductComparisonModal } from './components/ProductComparisonModal';
+import { ToastContainer } from './components/ToastContainer';
 import { Footer } from './components/Footer';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { PRODUCTS, INITIAL_USER } from './data/products';
-import { Product, ProductVariant, CartItem, CurrencyCode, Order, UserAccount, Review, PriceRangeId, WishlistItemMeta } from './types';
+import { Product, ProductVariant, CartItem, CurrencyCode, Order, UserAccount, Review, PriceRangeId, WishlistItemMeta, ToastNotification, ToastType } from './types';
 import { Sparkles, Check, MessageSquareText, MessageCircle, ShieldCheck, Truck, BedDouble, Shirt, Headphones, Coffee, RotateCcw, ArrowRight, LayoutGrid } from 'lucide-react';
 import { initDB, saveCatalog, getCatalog, saveFavorites, getFavorites } from './utils/indexedDB';
 
@@ -219,13 +220,32 @@ export default function App() {
     },
   ]);
 
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toasts, setToasts] = useState<ToastNotification[]>([]);
 
-  const showToast = (message: string) => {
-    setToastMessage(message);
-    setTimeout(() => {
-      setToastMessage(null);
-    }, 2800);
+  const addToast = (notification: Omit<ToastNotification, 'id'>) => {
+    const id = `toast-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const newToast: ToastNotification = { ...notification, id };
+    setToasts((prev) => [...prev.slice(-3), newToast]);
+  };
+
+  const dismissToast = (id: string) => {
+    setToasts((prev) => prev.filter((t) => t.id !== id));
+  };
+
+  const showToast = (
+    message: string,
+    type: ToastType = 'info',
+    options?: Partial<ToastNotification>
+  ) => {
+    addToast({
+      type,
+      title: options?.title || (language === 'fr' ? 'Notification' : 'Notice'),
+      message,
+      image: options?.image,
+      badge: options?.badge,
+      action: options?.action,
+      durationMs: options?.durationMs || 3500,
+    });
   };
 
   // Filtered & sorted products
@@ -305,10 +325,26 @@ export default function App() {
   const handleToggleWishlist = (product: Product) => {
     setWishlistIds((prev) => {
       if (prev.includes(product.id)) {
-        showToast(`"${product.name}" retiré des favoris`);
+        addToast({
+          type: 'favorite_remove',
+          title: language === 'fr' ? 'Retiré des favoris' : 'Removed from wishlist',
+          message: product.name,
+          image: product.image,
+          durationMs: 3000,
+        });
         return prev.filter((id) => id !== product.id);
       } else {
-        showToast(`"${product.name}" ajouté aux favoris`);
+        addToast({
+          type: 'favorite_add',
+          title: language === 'fr' ? 'Ajouté aux favoris ! ❤️' : 'Added to wishlist! ❤️',
+          message: product.name,
+          image: product.image,
+          action: {
+            label: language === 'fr' ? 'Voir mes favoris' : 'View wishlist',
+            onClick: () => setIsWishlistOpen(true),
+          },
+          durationMs: 4000,
+        });
         // Ensure meta exists
         setWishlistMetas(metaPrev => {
           if (!metaPrev.some(m => m.productId === product.id)) {
@@ -345,7 +381,13 @@ export default function App() {
       ...prev,
       coinsBalance: prev.coinsBalance + 50,
     }));
-    showToast(`+50 Pièces de récompense pour votre avis vérifié !`);
+    addToast({
+      type: 'coins',
+      title: language === 'fr' ? '+50 Pièces de récompense !' : '+50 Reward Coins!',
+      message: language === 'fr' ? 'Votre avis vérifié a été publié avec succès.' : 'Your review was published.',
+      badge: '+50 SO',
+      durationMs: 3800,
+    });
   };
 
   // Daily coins claim
@@ -355,7 +397,13 @@ export default function App() {
       coinsBalance: prev.coinsBalance + amount,
       streakDays: Math.min(7, prev.streakDays + 1),
     }));
-    showToast(`+${amount} pièces ajoutées à votre cagnotte !`);
+    addToast({
+      type: 'coins',
+      title: language === 'fr' ? `+${amount} Pièces bonus !` : `+${amount} Bonus Coins!`,
+      message: language === 'fr' ? 'Votre cagnotte fidélité a été créditée.' : 'Loyalty balance updated.',
+      badge: `Série ${Math.min(7, userAccount.streakDays + 1)}j`,
+      durationMs: 3500,
+    });
   };
 
   // Redeem coins coupon
@@ -374,7 +422,13 @@ export default function App() {
           },
         ],
       }));
-      showToast(`Coupon ${couponCode} (${discountEur}€) généré avec succès !`);
+      addToast({
+        type: 'coupon',
+        title: language === 'fr' ? 'Bon de réduction débloqué !' : 'Discount coupon unlocked!',
+        message: `Code ${couponCode} (${discountEur}€ de réduction)`,
+        badge: `-${discountEur} €`,
+        durationMs: 4000,
+      });
     }
   };
 
@@ -403,7 +457,18 @@ export default function App() {
       }
     });
 
-    showToast(`"${product.name}" ajouté au panier`);
+    addToast({
+      type: 'cart',
+      title: language === 'fr' ? 'Ajouté au panier !' : 'Added to cart!',
+      message: `${product.name} • ${chosenVariant.name}`,
+      image: product.image,
+      badge: `x${quantity}`,
+      action: {
+        label: language === 'fr' ? 'Voir mon panier' : 'View cart',
+        onClick: () => setIsCartOpen(true),
+      },
+      durationMs: 4000,
+    });
   };
 
   const handleUpdateQuantity = (productId: string, variantId: string, quantity: number) => {
@@ -439,7 +504,17 @@ export default function App() {
   const handleOrderCreated = (order: Order) => {
     setOrders((prev) => [order, ...prev]);
     setCartItems([]);
-    showToast(`Commande ${order.id} enregistrée ! Numéro de suivi : ${order.trackingNumber}`);
+    addToast({
+      type: 'order',
+      title: language === 'fr' ? 'Succès de commande ! 🎉' : 'Order placed! 🎉',
+      message: `Commande #${order.id} enregistrée • Suivi : ${order.trackingNumber}`,
+      badge: `${order.items.length} ${order.items.length > 1 ? 'articles' : 'article'}`,
+      action: {
+        label: language === 'fr' ? 'Suivre mon colis' : 'Track package',
+        onClick: () => handleTrackSpecificOrder(order.trackingNumber),
+      },
+      durationMs: 7000,
+    });
   };
 
   const handleTrackSpecificOrder = (trackingCode: string) => {
@@ -938,13 +1013,8 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* Toast Notification */}
-      {toastMessage && (
-        <div className="fixed bottom-18 md:bottom-5 right-5 z-50 bg-zinc-950 text-white px-4 py-3 rounded-xl shadow-xl border border-zinc-800 text-xs font-medium flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3 duration-200">
-          <Check className="w-4 h-4 text-emerald-400" />
-          <span>{toastMessage}</span>
-        </div>
-      )}
+      {/* Dynamic Animated Toast Notifications */}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       {/* Product Comparison Modal */}
       <ProductComparisonModal
