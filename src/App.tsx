@@ -159,6 +159,13 @@ export default function App() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isFacebookAdsOpen, setIsFacebookAdsOpen] = useState(false);
   const [isCommunityOpen, setIsCommunityOpen] = useState(false);
+  const [chatPreselectedProduct, setChatPreselectedProduct] = useState<Product | null>(null);
+
+  const handleOpenChatWithProduct = (product: Product) => {
+    setChatPreselectedProduct(product);
+    setIsCommunityOpen(true);
+  };
+
   const [comparedProductIds, setComparedProductIds] = useState<string[]>([]);
   const [isComparisonOpen, setIsComparisonOpen] = useState(false);
 
@@ -815,6 +822,7 @@ export default function App() {
         onAddToCart={handleAddToCart}
         onBuyNow={handleBuyNow}
         onAddReview={handleAddReview}
+        onOpenChatWithProduct={handleOpenChatWithProduct}
       />
 
       {/* Cart Drawer */}
@@ -925,6 +933,7 @@ export default function App() {
             onAddToCart={handleAddToCart}
             language={language}
             onLanguageChange={setLanguage}
+            initialProduct={chatPreselectedProduct}
           />
         )}
       </AnimatePresence>

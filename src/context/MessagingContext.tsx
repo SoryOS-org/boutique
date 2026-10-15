@@ -4,6 +4,8 @@ import {
   collection,
   doc,
   setDoc,
+  getDoc,
+  deleteDoc,
   onSnapshot,
   query,
   orderBy,
@@ -31,6 +33,8 @@ interface MessagingContextType {
   activeChatId: string;
   setActiveChatId: (chatId: string) => void;
   sendMessage: (text: string, chatId?: string, extra?: Partial<ChatMessage>) => Promise<void>;
+  addReaction: (msgId: string, emoji: string, chatId?: string) => Promise<void>;
+  deleteMessage: (msgId: string, chatId?: string) => Promise<void>;
   setTyping: (isTyping: boolean, chatId?: string) => void;
   updateUserPresence: (status: 'online' | 'offline') => Promise<void>;
   login: () => Promise<User | null>;
@@ -163,6 +167,9 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               status: data.status || 'read',
               product: data.product,
               voiceNote: data.voiceNote,
+              image: data.image,
+              quotedMessage: data.quotedMessage,
+              reactions: data.reactions,
             } as ChatMessage;
           });
 
@@ -211,6 +218,9 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       status: 'sent',
       product: extra?.product,
       voiceNote: extra?.voiceNote,
+      image: extra?.image,
+      quotedMessage: extra?.quotedMessage,
+      reactions: extra?.reactions,
       ...extra,
     };
 
@@ -260,9 +270,62 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           };
         }
 
+        if (extra?.image) {
+          payload.image = extra.image;
+        }
+
+        if (extra?.quotedMessage) {
+          payload.quotedMessage = extra.quotedMessage;
+        }
+
+        if (extra?.reactions) {
+          payload.reactions = extra.reactions;
+        }
+
         await setDoc(msgDocRef, payload);
       } catch (error) {
         handleFirestoreError(error, OperationType.WRITE, `chats/${targetChat}/messages/${msgId}`);
+      }
+    }
+  }, [activeChatId, firebaseUser]);
+
+  const addReaction = useCallback(async (msgId: string, emoji: string, chatId?: string) => {
+    const targetChat = chatId || activeChatId || 'group-club';
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== msgId) return m;
+        const currentReactions = { ...(m.reactions || {}) };
+        currentReactions[emoji] = (currentReactions[emoji] || 0) + 1;
+        return { ...m, reactions: currentReactions };
+      })
+    );
+
+    if (firebaseUser) {
+      try {
+        const msgDocRef = doc(db, 'chats', targetChat, 'messages', msgId);
+        const snapshot = await getDoc(msgDocRef);
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          const currentReactions = { ...(data.reactions || {}) };
+          currentReactions[emoji] = (currentReactions[emoji] || 0) + 1;
+          await setDoc(msgDocRef, { reactions: currentReactions }, { merge: true });
+        }
+      } catch (err) {
+        console.warn('Reaction persist notice:', err);
+      }
+    }
+  }, [activeChatId, firebaseUser]);
+
+  const deleteMessage = useCallback(async (msgId: string, chatId?: string) => {
+    const targetChat = chatId || activeChatId || 'group-club';
+    setMessages((prev) => prev.filter((m) => m.id !== msgId));
+
+    if (firebaseUser) {
+      try {
+        const msgDocRef = doc(db, 'chats', targetChat, 'messages', msgId);
+        await deleteDoc(msgDocRef);
+      } catch (err) {
+        console.warn('Delete message error:', err);
       }
     }
   }, [activeChatId, firebaseUser]);
@@ -314,6 +377,8 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         activeChatId,
         setActiveChatId,
         sendMessage,
+        addReaction,
+        deleteMessage,
         setTyping,
         updateUserPresence,
         login,

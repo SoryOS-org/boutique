@@ -25,7 +25,10 @@
         "avatarBg": { "type": "string", "maxLength": 50, "description": "Avatar background color class" },
         "text": { "type": "string", "maxLength": 2000, "description": "Message content" },
         "timestamp": { "type": "string", "description": "Display or ISO timestamp" },
-        "status": { "type": "string", "enum": ["sent", "delivered", "read"], "description": "Delivery status" }
+        "status": { "type": "string", "enum": ["sent", "delivered", "read"], "description": "Delivery status" },
+        "image": { "type": "string", "description": "Optional image URL or data URL" },
+        "quotedMessage": { "type": "object", "description": "Optional quoted message snippet" },
+        "reactions": { "type": "object", "description": "Emoji reactions and counts" }
       },
       "required": ["id", "chatId", "senderId", "text"]
     },

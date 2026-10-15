@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Star, ShieldCheck, Truck, RotateCcw, Check, ShoppingBag, Zap, Heart, Building2, Flame, AlertTriangle, Maximize2, ThumbsUp, Camera, Image as ImageIcon } from 'lucide-react';
+import { X, Star, ShieldCheck, Truck, RotateCcw, Check, ShoppingBag, Zap, Heart, Building2, Flame, AlertTriangle, Maximize2, ThumbsUp, Camera, Image as ImageIcon, MessageCircle } from 'lucide-react';
 import { Product, ProductVariant, CurrencyCode, Review } from '../types';
 import { formatPrice } from '../data/products';
 import { ImageLightbox } from './ImageLightbox';
@@ -13,6 +13,7 @@ interface ProductModalProps {
   onAddToCart: (product: Product, variant: ProductVariant, quantity: number) => void;
   onBuyNow: (product: Product, variant: ProductVariant, quantity: number) => void;
   onAddReview: (productId: string, review: Review) => void;
+  onOpenChatWithProduct?: (product: Product) => void;
 }
 
 export const ProductModal: React.FC<ProductModalProps> = ({
@@ -24,6 +25,7 @@ export const ProductModal: React.FC<ProductModalProps> = ({
   onAddToCart,
   onBuyNow,
   onAddReview,
+  onOpenChatWithProduct,
 }) => {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | undefined>(
     product?.variants?.[0]
@@ -548,12 +550,39 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                   <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed pt-1 border-t border-zinc-200 dark:border-zinc-700">
                     Cette entreprise expédie directement ses produits via le hub logistique SoryOS pour garantir les délais et l'inspection de chaque unité.
                   </p>
+                  {onOpenChatWithProduct && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onClose();
+                        onOpenChatWithProduct(product);
+                      }}
+                      className="w-full mt-3 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs active:scale-98"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      <span>Discuter avec le vendeur sur WhatsApp</span>
+                    </button>
+                  )}
                 </div>
               )}
             </div>
 
             {/* CTAs Box */}
-            <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row gap-3">
+            <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-col sm:flex-row items-center gap-3">
+              {onOpenChatWithProduct && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    onOpenChatWithProduct(product);
+                  }}
+                  className="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-300 dark:border-emerald-800 rounded-2xl hover:bg-emerald-100 dark:hover:bg-emerald-900/40 transition-colors cursor-pointer shrink-0"
+                  title="Discuter de ce produit sur WhatsApp"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                </button>
+              )}
+
               <button
                 onClick={handleAddToCart}
                 className={`flex-1 inline-flex items-center justify-center gap-2 px-5 py-3 text-sm font-bold rounded-2xl transition-all cursor-pointer ${

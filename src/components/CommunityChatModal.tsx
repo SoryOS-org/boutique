@@ -13,6 +13,7 @@ import { ChatSettingsModal } from './ChatSettingsModal';
 import { Product, CurrencyCode, UserAccount } from '../types';
 import { formatPrice } from '../data/products';
 import { RealVoiceRecorder, generateDemoVoiceWav, VoiceDictation } from '../utils/audioRecorder';
+import { ImageLightbox } from './ImageLightbox';
 
 export interface ChatMessage {
   id: string;
@@ -85,6 +86,7 @@ interface CommunityChatModalProps {
   onAddToCart: (product: Product) => void;
   language: 'fr' | 'en';
   onLanguageChange: (lang: 'fr' | 'en') => void;
+  initialProduct?: Product | null;
 }
 
 export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
@@ -96,10 +98,13 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
   onAddToCart,
   language,
   onLanguageChange,
+  initialProduct,
 }) => {
   const {
     messages: firestoreMessages,
     sendMessage,
+    addReaction: firestoreAddReaction,
+    deleteMessage: firestoreDeleteMessage,
     typingUsers,
     firebaseUser,
     isFirestoreConnected,
@@ -355,6 +360,17 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
   const [visibilityStatus, setVisibilityStatus] = useState<'online' | 'offline' | 'busy'>('online');
   const [replyingToMessage, setReplyingToMessage] = useState<ChatMessage | null>(null);
   
+  // Media & Attachment states
+  const [selectedImageToShare, setSelectedImageToShare] = useState<string | null>(null);
+  const [showProductPicker, setShowProductPicker] = useState(false);
+  const [showNewChatModal, setShowNewChatModal] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [activeReactionMessageId, setActiveReactionMessageId] = useState<string | null>(null);
+  const [newStoryModalOpen, setNewStoryModalOpen] = useState(false);
+  const [newStoryCaption, setNewStoryCaption] = useState('');
+  const [newStoryImage, setNewStoryImage] = useState('');
+
   // Status story viewer modal state
   const [activeStory, setActiveStory] = useState<WhatsAppStatus | null>(null);
   const [storyProgress, setStoryProgress] = useState(0);
@@ -364,6 +380,7 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
   const [callDuration, setCallDuration] = useState(0);
   const [isCallMuted, setIsCallMuted] = useState(false);
   const [isCallSpeaker, setIsCallSpeaker] = useState(true);
+  const [isVideoCamOn, setIsVideoCamOn] = useState(true);
 
   // Top notification banner
   const [bannerNotice, setBannerNotice] = useState<string | null>(null);
@@ -373,6 +390,21 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
   const previewAudioRef = useRef<HTMLAudioElement | null>(null);
   const dictationRef = useRef<VoiceDictation | null>(null);
   const activeAudioRef = useRef<HTMLAudioElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const storyFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Auto-attach product when opened via "Discuter avec le vendeur"
+  useEffect(() => {
+    if (initialProduct) {
+      setSelectedProductToShare(initialProduct);
+      setActiveChatId('seller-support');
+      setMobileView('chat');
+      setBannerNotice(language === 'fr' 
+        ? `Article "${initialProduct.name}" pré-sélectionné pour discuter avec le vendeur` 
+        : `Product "${initialProduct.name}" pre-attached to chat with seller`);
+      setTimeout(() => setBannerNotice(null), 4000);
+    }
+  }, [initialProduct, language]);
 
   const activeChat = conversations.find((c) => c.id === activeChatId) || conversations[0];
 
@@ -795,8 +827,8 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
     };
   }, []);
 
-  // Add Reaction
-  const handleAddReaction = (msgId: string, emoji: string) => {
+  // Add Reaction (local + Firestore)
+  const handleAddReaction = async (msgId: string, emoji: string) => {
     setConversations((prev) =>
       prev.map((conv) => {
         if (conv.id !== activeChatId) return conv;
@@ -811,17 +843,154 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
         };
       })
     );
+
+    setActiveReactionMessageId(null);
+
+    try {
+      await firestoreAddReaction(msgId, emoji, activeChatId);
+    } catch (err) {
+      console.warn('Reaction sync error:', err);
+    }
+  };
+
+  // Delete message
+  const handleDeleteMessage = async (msgId: string) => {
+    setConversations((prev) =>
+      prev.map((conv) => {
+        if (conv.id !== activeChatId) return conv;
+        return {
+          ...conv,
+          messages: conv.messages.filter((m) => m.id !== msgId),
+        };
+      })
+    );
+
+    try {
+      await firestoreDeleteMessage(msgId, activeChatId);
+      setBannerNotice(language === 'fr' ? "Message supprimé" : "Message deleted");
+      setTimeout(() => setBannerNotice(null), 2500);
+    } catch (err) {
+      console.warn('Delete message sync error:', err);
+    }
+  };
+
+  // Copy message text
+  const handleCopyMessage = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setBannerNotice(language === 'fr' ? "Texte copié dans le presse-papier !" : "Text copied to clipboard!");
+    setTimeout(() => setBannerNotice(null), 2500);
+  };
+
+  // Handle image upload from user device
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 4 * 1024 * 1024) {
+      setBannerNotice(language === 'fr' ? "L'image est trop volumineuse (max 4 Mo)" : "Image too large (max 4MB)");
+      setTimeout(() => setBannerNotice(null), 3000);
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setSelectedImageToShare(reader.result as string);
+      setBannerNotice(language === 'fr' ? "Photo sélectionnée prête à l'envoi !" : "Photo selected, ready to send!");
+      setTimeout(() => setBannerNotice(null), 2500);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  // Start direct conversation with contact or seller
+  const handleStartDirectChat = (contact: { id: string; name: string; avatarBg: string; avatarText: string; isGroup?: boolean }) => {
+    const existing = conversations.find(c => c.id === contact.id);
+    if (!existing) {
+      const newConv: Conversation = {
+        id: contact.id,
+        name: contact.name,
+        avatarBg: contact.avatarBg,
+        avatarText: contact.avatarText,
+        isGroup: !!contact.isGroup,
+        online: true,
+        statusText: language === 'fr' ? 'En ligne' : 'Online',
+        unreadCount: 0,
+        lastMessageTime: 'À l’instant',
+        messages: [
+          {
+            id: `welcome-${Date.now()}`,
+            senderId: contact.id,
+            senderName: contact.name,
+            senderAvatar: contact.avatarText,
+            avatarBg: contact.avatarBg,
+            text: language === 'fr' 
+              ? `Bonjour ! Bienvenue dans la discussion avec ${contact.name}. Comment pouvons-nous vous aider ?` 
+              : `Hello! Welcome to the chat with ${contact.name}. How can we assist you?`,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isMe: false,
+            status: 'read',
+          }
+        ],
+      };
+      setConversations(prev => [newConv, ...prev]);
+    }
+    setActiveChatId(contact.id);
+    setShowNewChatModal(false);
+    setMobileView('chat');
+  };
+
+  // Create new group chat
+  const handleCreateNewGroup = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGroupName.trim()) return;
+
+    const groupId = `group-${Date.now()}`;
+    const initials = newGroupName.trim().slice(0, 2).toUpperCase();
+    const newGroup: Conversation = {
+      id: groupId,
+      name: newGroupName.trim(),
+      avatarBg: 'bg-emerald-600',
+      avatarText: initials,
+      isGroup: true,
+      memberCount: 1,
+      online: true,
+      statusText: language === 'fr' ? '1 membre • Vous êtes administrateur' : '1 member • You are admin',
+      unreadCount: 0,
+      lastMessageTime: 'À l’instant',
+      messages: [
+        {
+          id: `init-${Date.now()}`,
+          senderId: firebaseUser ? firebaseUser.uid : 'me',
+          senderName: user.name || (language === 'fr' ? 'Moi' : 'Me'),
+          senderAvatar: initials,
+          avatarBg: 'bg-emerald-600',
+          text: language === 'fr' ? `Groupe "${newGroupName.trim()}" créé avec succès !` : `Group "${newGroupName.trim()}" successfully created!`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isMe: true,
+          status: 'sent',
+        }
+      ],
+    };
+
+    setConversations(prev => [newGroup, ...prev]);
+    setActiveChatId(groupId);
+    setNewGroupName('');
+    setShowNewChatModal(false);
+    setMobileView('chat');
+    setBannerNotice(language === 'fr' ? `Nouveau groupe "${newGroup.name}" créé !` : `New group "${newGroup.name}" created!`);
+    setTimeout(() => setBannerNotice(null), 3000);
   };
 
   // Send message
   const handleSendMessage = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!inputText.trim() && !selectedProductToShare) return;
+    if (!inputText.trim() && !selectedProductToShare && !selectedImageToShare) return;
 
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const sentText = inputText.trim() || (language === 'fr' ? "Regardez cet article direct usine !" : "Check out this direct factory deal!");
+    const sentText = inputText.trim() || (selectedImageToShare ? (language === 'fr' ? "📷 Photo partagée" : "📷 Shared photo") : (language === 'fr' ? "Regardez cet article direct usine !" : "Check out this direct factory deal!"));
     const productToSend = selectedProductToShare || undefined;
+    const imageToSend = selectedImageToShare || undefined;
 
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
@@ -834,6 +1003,7 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
       isMe: true,
       status: 'sent',
       product: productToSend,
+      image: imageToSend,
       quotedMessage: replyingToMessage
         ? { sender: replyingToMessage.senderName, text: replyingToMessage.text }
         : undefined,
@@ -852,6 +1022,7 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
 
     setInputText('');
     setSelectedProductToShare(null);
+    setSelectedImageToShare(null);
     setShowEmojiPicker(false);
     setShowAttachmentMenu(false);
     setReplyingToMessage(null);
@@ -861,6 +1032,10 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
     try {
       await sendMessage(sentText, activeChatId, {
         product: productToSend,
+        image: imageToSend,
+        quotedMessage: replyingToMessage
+          ? { sender: replyingToMessage.senderName, text: replyingToMessage.text }
+          : undefined,
       });
     } catch (err) {
       console.warn('Realtime message dispatch notice:', err);
@@ -1627,6 +1802,18 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
                     </div>
                   )}
 
+                  {/* Shared Photo in WhatsApp Bubble */}
+                  {msg.image && (
+                    <div className="mb-2 overflow-hidden rounded-xl bg-black/5 max-w-sm">
+                      <img
+                        src={msg.image}
+                        alt="Photo WhatsApp"
+                        className="w-full max-h-72 object-cover rounded-xl cursor-pointer hover:opacity-95 transition-opacity shadow-xs"
+                        onClick={() => setLightboxImage(msg.image || null)}
+                      />
+                    </div>
+                  )}
+
                   {/* Sender Name in Group Chat */}
                   {!msg.isMe && activeChat.isGroup && (
                     <div className="flex items-center gap-1.5 mb-1">
@@ -1762,7 +1949,7 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
                 </div>
 
                 {/* Reactions list & quick reaction buttons */}
-                <div className="flex items-center gap-1 mt-0.5 px-1">
+                <div className="relative flex items-center gap-1 mt-0.5 px-1">
                   {msg.reactions && Object.entries(msg.reactions).map(([emoji, count]) => (
                     <button
                       key={emoji}
@@ -1774,27 +1961,57 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
                     </button>
                   ))}
 
-                  <button
-                    onClick={() => handleAddReaction(msg.id, '❤️')}
-                    className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-rose-500 p-0.5 text-xs transition-opacity cursor-pointer"
-                    title="Réagir"
-                  >
-                    ❤️
-                  </button>
-                  <button
-                    onClick={() => handleAddReaction(msg.id, '👍')}
-                    className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-emerald-500 p-0.5 text-xs transition-opacity cursor-pointer"
-                    title="J'aime"
-                  >
-                    👍
-                  </button>
+                  {/* Reaction trigger toggle */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setActiveReactionMessageId(activeReactionMessageId === msg.id ? null : msg.id)}
+                      className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-emerald-500 p-1 text-xs transition-opacity cursor-pointer rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      title="Ajouter une réaction"
+                    >
+                      <Smile className="w-3.5 h-3.5" />
+                    </button>
+
+                    {/* Floating Reaction Dock */}
+                    {activeReactionMessageId === msg.id && (
+                      <div className="absolute bottom-6 left-0 z-30 bg-white dark:bg-[#233138] border border-zinc-200 dark:border-zinc-700 rounded-full px-2 py-1 shadow-xl flex items-center gap-1.5 animate-in zoom-in-95 duration-150">
+                        {['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥'].map((emoji) => (
+                          <button
+                            key={emoji}
+                            onClick={() => handleAddReaction(msg.id, emoji)}
+                            className="text-base p-1 hover:scale-130 transition-transform cursor-pointer"
+                          >
+                            {emoji}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
                   <button
                     onClick={() => setReplyingToMessage(msg)}
-                    className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-blue-500 p-0.5 text-xs transition-opacity cursor-pointer"
+                    className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-blue-500 p-1 text-xs transition-opacity cursor-pointer rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"
                     title="Répondre"
                   >
                     <Reply className="w-3.5 h-3.5" />
                   </button>
+
+                  <button
+                    onClick={() => handleCopyMessage(msg.text)}
+                    className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 p-1 text-xs transition-opacity cursor-pointer rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                    title="Copier le texte"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                  </button>
+
+                  {msg.isMe && (
+                    <button
+                      onClick={() => handleDeleteMessage(msg.id)}
+                      className="opacity-0 group-hover:opacity-100 text-zinc-400 hover:text-red-500 p-1 text-xs transition-opacity cursor-pointer rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800"
+                      title="Supprimer le message"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}
@@ -1827,6 +2044,35 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
               </div>
             )}
 
+            {/* Selected Image attachment preview */}
+            {selectedImageToShare && (
+              <div className="mb-2 p-2.5 bg-purple-50 dark:bg-purple-950/40 border border-purple-300 dark:border-purple-800 rounded-xl flex items-center justify-between text-xs animate-in slide-in-from-bottom-2">
+                <div className="flex items-center gap-3">
+                  <img src={selectedImageToShare} alt="Photo sélectionnée" className="w-12 h-12 rounded-lg object-cover border border-purple-300 dark:border-purple-700" />
+                  <div>
+                    <span className="font-bold text-purple-900 dark:text-purple-200 block">Photo prête à être partagée</span>
+                    <span className="text-[10px] text-purple-700 dark:text-purple-400">Sera envoyée dans la discussion WhatsApp</span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedImageToShare(null)}
+                  className="p-1.5 text-zinc-400 hover:text-red-500 rounded-lg hover:bg-white dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Hidden file input for photos */}
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept="image/*"
+              className="hidden"
+              onChange={handleImageFileChange}
+            />
+
             {/* Product selection preview */}
             {selectedProductToShare && (
               <div className="mb-2 p-2 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-xl flex items-center justify-between text-xs animate-in slide-in-from-bottom-2">
@@ -1842,8 +2088,9 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setSelectedProductToShare(null)}
-                  className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-white"
+                  className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-white cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1874,13 +2121,25 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
                 <button
                   type="button"
                   onClick={() => {
-                    if (products.length > 0) setSelectedProductToShare(products[0]);
+                    setShowProductPicker(true);
                     setShowAttachmentMenu(false);
                   }}
-                  className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 hover:scale-105 transition-transform"
+                  className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 hover:scale-105 transition-transform cursor-pointer"
                 >
                   <ShoppingBag className="w-5 h-5 mb-1" />
-                  <span className="text-[10px] font-bold">Produit</span>
+                  <span className="text-[10px] font-bold">Catalogue Produit</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    fileInputRef.current?.click();
+                    setShowAttachmentMenu(false);
+                  }}
+                  className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 hover:scale-105 transition-transform cursor-pointer"
+                >
+                  <Camera className="w-5 h-5 mb-1" />
+                  <span className="text-[10px] font-bold">Photo / Fichier</span>
                 </button>
 
                 <button
@@ -1889,22 +2148,10 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
                     setInputText((prev) => prev + " 🎁 Code promo SORYOS20 (-20%) ");
                     setShowAttachmentMenu(false);
                   }}
-                  className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:scale-105 transition-transform"
+                  className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:scale-105 transition-transform cursor-pointer"
                 >
                   <Tag className="w-5 h-5 mb-1" />
                   <span className="text-[10px] font-bold">Code Promo</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setInputText((prev) => prev + " 📷 Photo : Colis reçu en parfait état direct fabricant ! ");
-                    setShowAttachmentMenu(false);
-                  }}
-                  className="flex flex-col items-center justify-center p-2.5 rounded-xl bg-purple-50 dark:bg-purple-950/40 text-purple-600 dark:text-purple-400 hover:scale-105 transition-transform"
-                >
-                  <Camera className="w-5 h-5 mb-1" />
-                  <span className="text-[10px] font-bold">Photo</span>
                 </button>
 
                 <button
@@ -2221,6 +2468,221 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Product Selection Modal from Store Catalog */}
+      {showProductPicker && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#1f2c34] rounded-2xl max-w-lg w-full max-h-[85vh] flex flex-col shadow-2xl border border-zinc-200 dark:border-zinc-700 animate-in fade-in zoom-in-95">
+            <div className="p-4 border-b border-zinc-200 dark:border-zinc-700 flex items-center justify-between">
+              <div>
+                <h4 className="font-bold text-base text-zinc-900 dark:text-white">
+                  {language === 'fr' ? "Sélectionner un produit du magasin" : "Select a product to share"}
+                </h4>
+                <p className="text-xs text-zinc-500">
+                  {language === 'fr' ? "Partagez la fiche produit en direct usine dans le chat" : "Share direct factory deal directly into chat"}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowProductPicker(false)}
+                className="p-1.5 text-zinc-400 hover:text-zinc-700 dark:hover:text-white rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-4 overflow-y-auto space-y-2.5 flex-1 max-h-[60vh] scrollbar-subtle">
+              {products.map((p) => (
+                <div
+                  key={p.id}
+                  className="flex items-center gap-3 p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 hover:border-emerald-500 dark:hover:border-emerald-500 bg-zinc-50 dark:bg-zinc-800/50 transition-colors"
+                >
+                  <img src={p.image} alt={p.name} className="w-14 h-14 object-cover rounded-lg bg-white shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <span className="text-[10px] uppercase font-bold text-orange-600 block">{p.seller.name}</span>
+                    <h5 className="font-bold text-xs text-zinc-900 dark:text-zinc-100 truncate">{p.name}</h5>
+                    <div className="text-xs font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                      {formatPrice(p.priceEUR, currency)}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedProductToShare(p);
+                      setShowProductPicker(false);
+                      setBannerNotice(language === 'fr' ? `Produit "${p.name}" attaché !` : `Product "${p.name}" attached!`);
+                      setTimeout(() => setBannerNotice(null), 3000);
+                    }}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-colors cursor-pointer shrink-0"
+                  >
+                    {language === 'fr' ? "Sélectionner" : "Select"}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* New Chat / Create Group Modal */}
+      {showNewChatModal && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#1f2c34] rounded-2xl max-w-md w-full p-5 shadow-2xl border border-zinc-200 dark:border-zinc-700 animate-in fade-in zoom-in-95">
+            <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-700 mb-4">
+              <h4 className="font-bold text-base text-zinc-900 dark:text-white">
+                {language === 'fr' ? "Nouvelle Discussion ou Groupe" : "New Chat or Group"}
+              </h4>
+              <button 
+                type="button"
+                onClick={() => setShowNewChatModal(false)} 
+                className="p-1 text-zinc-400 hover:text-zinc-700 dark:hover:text-white cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Quick Contacts */}
+            <div className="mb-4">
+              <h5 className="text-[11px] font-bold uppercase text-zinc-400 tracking-wider mb-2">
+                {language === 'fr' ? "Contacts & Salons" : "Contacts & Rooms"}
+              </h5>
+              <div className="space-y-1.5">
+                {[
+                  { id: 'seller-support', name: 'Boutique SoryOS (Direct Usine) ✅', avatarBg: 'bg-orange-600', avatarText: 'SO' },
+                  { id: 'group-club', name: 'Club SoryOS Officiel', avatarBg: 'bg-emerald-600', avatarText: 'CS', isGroup: true },
+                  { id: 'user-mamadou', name: 'Mamadou Sylla (VIP)', avatarBg: 'bg-teal-600', avatarText: 'MS' },
+                  { id: 'user-fatou', name: 'Fatoumata Diallo (Cliente)', avatarBg: 'bg-rose-500', avatarText: 'FD' },
+                  { id: 'agent-support', name: 'Support Technique & Livraison 24/7', avatarBg: 'bg-blue-600', avatarText: 'ST' },
+                ].map((c) => (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => handleStartDirectChat(c)}
+                    className="w-full flex items-center gap-3 p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors text-left cursor-pointer"
+                  >
+                    <div className={`w-9 h-9 rounded-full ${c.avatarBg} text-white font-bold flex items-center justify-center text-xs shrink-0`}>
+                      {c.avatarText}
+                    </div>
+                    <div className="flex-1 truncate">
+                      <div className="font-bold text-xs text-zinc-900 dark:text-zinc-100 truncate">{c.name}</div>
+                      <div className="text-[10px] text-emerald-600 dark:text-emerald-400">En ligne</div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-zinc-400" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Create Custom Group */}
+            <form onSubmit={handleCreateNewGroup} className="pt-3 border-t border-zinc-200 dark:border-zinc-700">
+              <h5 className="text-[11px] font-bold uppercase text-zinc-400 tracking-wider mb-2">
+                {language === 'fr' ? "Créer un nouveau groupe WhatsApp" : "Create a new WhatsApp Group"}
+              </h5>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder={language === 'fr' ? "Nom du groupe..." : "Group name..."}
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value)}
+                  className="flex-1 px-3 py-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+                <button
+                  type="submit"
+                  disabled={!newGroupName.trim()}
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition-colors cursor-pointer shrink-0"
+                >
+                  {language === 'fr' ? "Créer" : "Create"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Immersive Fullscreen WhatsApp Calling Screen */}
+      {activeCallContact && (
+        <div className="fixed inset-0 z-[70] bg-zinc-950/95 flex flex-col items-center justify-between p-6 sm:p-10 animate-in fade-in">
+          <div className="text-center space-y-1">
+            <span className="text-emerald-400 text-xs font-semibold uppercase tracking-wider">
+              {activeCallContact.isVideo ? "Appel Vidéo WhatsApp Sécurisé" : "Appel Vocal WhatsApp Chiffré"}
+            </span>
+            <h3 className="text-xl sm:text-2xl font-bold text-white">
+              {activeCallContact.name}
+            </h3>
+            <p className="text-xs text-zinc-400 font-mono">
+              {language === 'fr' ? "En cours..." : "Connected..."} • {Math.floor(callDuration / 60).toString().padStart(2, '0')}:{(callDuration % 60).toString().padStart(2, '0')}
+            </p>
+          </div>
+
+          <div className="relative flex items-center justify-center my-auto">
+            <div className="w-36 h-36 sm:w-44 sm:h-44 rounded-full bg-emerald-500/20 animate-ping absolute"></div>
+            <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full bg-emerald-500/30 animate-pulse absolute"></div>
+            <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-emerald-600 text-white font-extrabold text-3xl sm:text-4xl flex items-center justify-center shadow-2xl relative z-10 border-4 border-white/20">
+              {activeCallContact.name.slice(0, 2).toUpperCase()}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 sm:gap-6 bg-zinc-900/90 border border-zinc-800 px-6 py-4 rounded-3xl shadow-2xl">
+            <button
+              type="button"
+              onClick={() => setIsCallMuted(!isCallMuted)}
+              className={`p-3.5 rounded-full transition-colors cursor-pointer ${
+                isCallMuted ? 'bg-red-500 text-white' : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200'
+              }`}
+              title={isCallMuted ? "Réactiver le micro" : "Couper le micro"}
+            >
+              {isCallMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsCallSpeaker(!isCallSpeaker)}
+              className={`p-3.5 rounded-full transition-colors cursor-pointer ${
+                isCallSpeaker ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200' : 'bg-zinc-700 text-zinc-400'
+              }`}
+              title="Haut-parleur"
+            >
+              {isCallSpeaker ? <Volume2 className="w-5 h-5" /> : <VolumeX className="w-5 h-5" />}
+            </button>
+
+            {activeCallContact.isVideo && (
+              <button
+                type="button"
+                onClick={() => setIsVideoCamOn(!isVideoCamOn)}
+                className={`p-3.5 rounded-full transition-colors cursor-pointer ${
+                  isVideoCamOn ? 'bg-zinc-800 hover:bg-zinc-700 text-zinc-200' : 'bg-red-500 text-white'
+                }`}
+                title="Caméra"
+              >
+                <Video className="w-5 h-5" />
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveCallContact(null);
+                setBannerNotice(language === 'fr' ? "Appel terminé" : "Call ended");
+                setTimeout(() => setBannerNotice(null), 2500);
+              }}
+              className="p-3.5 rounded-full bg-red-600 hover:bg-red-700 text-white shadow-lg transition-transform hover:scale-105 active:scale-95 cursor-pointer"
+              title="Raccrocher"
+            >
+              <PhoneCall className="w-5 h-5 rotate-135" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Image Lightbox for photos */}
+      {lightboxImage && (
+        <ImageLightbox
+          isOpen={true}
+          images={[lightboxImage]}
+          productName="WhatsApp Media"
+          onClose={() => setLightboxImage(null)}
+        />
       )}
 
       </div>
