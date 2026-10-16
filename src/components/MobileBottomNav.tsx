@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Flame, Heart, ShoppingBag, User } from 'lucide-react';
+import { Home, Flame, Heart, ShoppingBag, User, MessageCircle } from 'lucide-react';
 
 interface MobileBottomNavProps {
   cartCount: number;
@@ -10,6 +10,7 @@ interface MobileBottomNavProps {
   onOpenWishlist: () => void;
   onOpenCart: () => void;
   onOpenAccount: () => void;
+  onOpenMessenger?: () => void;
 }
 
 export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
@@ -20,6 +21,7 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
   onOpenWishlist,
   onOpenCart,
   onOpenAccount,
+  onOpenMessenger,
 }) => {
   return (
     <nav className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-zinc-900/95 backdrop-blur-md border-t border-zinc-200 dark:border-zinc-800 md:hidden px-2 py-1.5 flex items-center justify-around shadow-lg transition-colors">
@@ -64,6 +66,19 @@ export const MobileBottomNav: React.FC<MobileBottomNavProps> = ({
         )}
         <span className="text-[10px] font-medium mt-0.5">Panier</span>
       </button>
+
+      {onOpenMessenger && (
+        <button
+          onClick={onOpenMessenger}
+          className="flex flex-col items-center justify-center p-1.5 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 cursor-pointer relative"
+        >
+          <div className="relative">
+            <MessageCircle className="w-5 h-5" />
+            <span className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          </div>
+          <span className="text-[10px] font-bold mt-0.5">Chat</span>
+        </button>
+      )}
 
       <button
         onClick={onOpenAccount}

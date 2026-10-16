@@ -23,6 +23,7 @@ import { FacebookAdsModal } from './components/FacebookAdsModal';
 import { CommunityChatModal } from './components/CommunityChatModal';
 import { ProductComparisonModal } from './components/ProductComparisonModal';
 import { ToastContainer } from './components/ToastContainer';
+import { InitialPortal } from './components/InitialPortal';
 import { Footer } from './components/Footer';
 import { MobileBottomNav } from './components/MobileBottomNav';
 import { PRODUCTS, INITIAL_USER } from './data/products';
@@ -39,6 +40,10 @@ export default function App() {
   React.useEffect(() => {
     localStorage.setItem('soryos_lang', language);
   }, [language]);
+
+  // Initial Point View: 'portal' (Hub with 2 main buttons) or 'shop' (Full store as before)
+  const [activeView, setActiveView] = useState<'portal' | 'shop'>('portal');
+
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [sortBy, setSortBy] = useState<'popular' | 'price-asc' | 'price-desc' | 'rating'>('popular');
@@ -524,6 +529,32 @@ export default function App() {
 
   const totalCartCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
 
+  // If at the Initial Point: Render the modern Portal with the two prominent buttons
+  if (activeView === 'portal') {
+    return (
+      <MessagingProvider>
+        <InitialPortal
+          onSelectShop={() => {
+            setActiveView('shop');
+            window.scrollTo({ top: 0, behavior: 'instant' });
+          }}
+          onSelectMessenger={() => {
+            setActiveView('shop');
+            setIsCommunityOpen(true);
+          }}
+          language={language}
+          onLanguageChange={setLanguage}
+          currency={currency}
+          onCurrencyChange={setCurrency}
+          cartCount={totalCartCount}
+          wishlistCount={wishlistIds.length}
+        />
+        {/* Dynamic Animated Toast Notifications */}
+        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      </MessagingProvider>
+    );
+  }
+
   return (
     <MessagingProvider>
       <div className="min-h-screen bg-zinc-50 dark:bg-zinc-950 flex flex-col text-zinc-900 dark:text-zinc-100 pb-16 md:pb-0 selection:bg-orange-500 selection:text-white relative transition-colors">
@@ -557,6 +588,7 @@ export default function App() {
         onOpenFacebookAds={() => setIsFacebookAdsOpen(true)}
         language={language}
         onLanguageChange={setLanguage}
+        onBackToPortal={() => setActiveView('portal')}
       />
 
       {/* Sticky Workspace search, category sliding rail & price badges */}
@@ -877,7 +909,7 @@ export default function App() {
         cartCount={totalCartCount}
         wishlistCount={wishlistIds.length}
         activeSection="home"
-        onNavigateHome={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        onNavigateHome={() => setActiveView('portal')}
         onOpenFlash={() => {
           const el = document.getElementById('flash-section');
           el?.scrollIntoView({ behavior: 'smooth' });
@@ -885,6 +917,7 @@ export default function App() {
         onOpenWishlist={() => setIsWishlistOpen(true)}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenAccount={() => setIsAccountOpen(true)}
+        onOpenMessenger={() => setIsCommunityOpen(true)}
       />
 
       {/* Product Detail Modal PDP */}

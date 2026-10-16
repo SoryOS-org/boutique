@@ -15,12 +15,14 @@ export interface HeaderProps {
   onOpenFacebookAds: () => void;
   language: 'fr' | 'en';
   onLanguageChange: (lang: 'fr' | 'en') => void;
+  onBackToPortal?: () => void;
 }
 
 const translations = {
   fr: {
     announcement: "Assistance Téléphonique & WhatsApp Officielle :",
     onlineStore: "Boutique en ligne",
+    portal: "Accueil Hub",
     superDeals: "SuperDeals Flash",
     choiceSelection: "Sélection Choice",
     community: "Club Communauté",
@@ -37,6 +39,7 @@ const translations = {
   en: {
     announcement: "Official Telephone & WhatsApp Support:",
     onlineStore: "Online Store",
+    portal: "Home Hub",
     superDeals: "Flash SuperDeals",
     choiceSelection: "Choice Selection",
     community: "Community Club",
@@ -65,6 +68,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenFacebookAds,
   language,
   onLanguageChange,
+  onBackToPortal,
 }) => {
   const { isDark, toggleTheme } = useTheme();
   const t = translations[language];
@@ -85,9 +89,14 @@ export const Header: React.FC<HeaderProps> = ({
           href="#"
           onClick={(e) => {
             e.preventDefault();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (onBackToPortal) {
+              onBackToPortal();
+            } else {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
           }}
-          className="tracking-tight text-zinc-950 dark:text-zinc-100 whitespace-nowrap shrink-0 flex items-center gap-2 group"
+          className="tracking-tight text-zinc-950 dark:text-zinc-100 whitespace-nowrap shrink-0 flex items-center gap-2 group cursor-pointer"
+          title="Retourner au portail d'accueil SoryOS"
         >
           <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-orange-500 to-amber-600 text-white flex items-center justify-center font-black text-base sm:text-lg shadow-sm shadow-orange-500/20 group-hover:scale-105 transition-transform">
             S
@@ -105,6 +114,15 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Zone 2: Navigation links (Desktop) */}
         <nav className="hidden md:flex items-center gap-5 lg:gap-6 text-sm font-medium text-zinc-600 dark:text-zinc-300">
+          {onBackToPortal && (
+            <button
+              onClick={onBackToPortal}
+              className="text-xs font-bold px-2.5 py-1 rounded-lg bg-zinc-100 dark:bg-zinc-800/80 text-zinc-700 dark:text-zinc-300 hover:text-orange-600 dark:hover:text-orange-400 transition-colors cursor-pointer border border-zinc-200 dark:border-zinc-700"
+              title="Retourner à l'écran d'accueil avec les 2 boutons"
+            >
+              {t.portal}
+            </button>
+          )}
           <button
             onClick={onOpenFlash}
             className="hover:text-red-500 transition-colors whitespace-nowrap shrink-0 hover:underline underline-offset-4 cursor-pointer font-semibold text-red-600 dark:text-red-400"
