@@ -120,6 +120,18 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
     login: loginFirebase,
     logout: logoutFirebase,
   } = useMessaging();
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isOpen]);
+
   // Navigation tabs state
   const [activeTab, setActiveTab] = useState<'chats' | 'status' | 'communities' | 'calls'>('chats');
 
