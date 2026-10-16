@@ -6,10 +6,16 @@ import {
   MessageCircle, Play, Pause, Heart, ThumbsUp, Flame, Sparkles, Filter,
   PhoneCall, PhoneIncoming, PhoneOutgoing, PhoneMissed, Camera, FileText,
   MapPin, Tag, Plus, Pin, MicOff, Volume2, VolumeX, Reply, Trash2,
-  Copy, CircleDot, ChevronRight, Share2, AlertCircle, Settings, LogIn
+  Copy, CircleDot, ChevronRight, Share2, AlertCircle, Settings, LogIn,
+  Store, BadgeCheck, Clock, CreditCard
 } from 'lucide-react';
 import { useMessaging } from '../context/MessagingContext';
 import { ChatSettingsModal } from './ChatSettingsModal';
+import { 
+  WhatsAppCatalogModal, 
+  WhatsAppBusinessProfileModal, 
+  WhatsAppQuickRepliesBar 
+} from './WhatsAppBusinessModals';
 import { Product, CurrencyCode, UserAccount } from '../types';
 import { formatPrice } from '../data/products';
 import { RealVoiceRecorder, generateDemoVoiceWav, VoiceDictation } from '../utils/audioRecorder';
@@ -338,6 +344,9 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showAttachmentMenu, setShowAttachmentMenu] = useState(false);
   const [selectedProductToShare, setSelectedProductToShare] = useState<Product | null>(null);
+  // WhatsApp Business specific states
+  const [isCatalogOpen, setIsCatalogOpen] = useState(false);
+  const [isBusinessProfileOpen, setIsBusinessProfileOpen] = useState(false);
   const [isTypingSimulated, setIsTypingSimulated] = useState(false);
   const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
   const [voicePlaybackProgress, setVoicePlaybackProgress] = useState<number>(0);
@@ -982,14 +991,15 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
   };
 
   // Send message
-  const handleSendMessage = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!inputText.trim() && !selectedProductToShare && !selectedImageToShare) return;
+  const handleSendMessage = async (e?: React.FormEvent, customText?: string, customProduct?: Product) => {
+    if (e && e.preventDefault) e.preventDefault();
+    const messageBody = customText !== undefined ? customText : inputText;
+    if (!messageBody.trim() && !selectedProductToShare && !selectedImageToShare && !customProduct) return;
 
     const now = new Date();
     const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-    const sentText = inputText.trim() || (selectedImageToShare ? (language === 'fr' ? "📷 Photo partagée" : "📷 Shared photo") : (language === 'fr' ? "Regardez cet article direct usine !" : "Check out this direct factory deal!"));
-    const productToSend = selectedProductToShare || undefined;
+    const sentText = messageBody.trim() || (selectedImageToShare ? (language === 'fr' ? "📷 Photo partagée" : "📷 Shared photo") : (language === 'fr' ? "Regardez cet article direct usine !" : "Check out this direct factory deal!"));
+    const productToSend = customProduct || selectedProductToShare || undefined;
     const imageToSend = selectedImageToShare || undefined;
 
     const newMsg: ChatMessage = {
@@ -1020,7 +1030,9 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
       })
     );
 
-    setInputText('');
+    if (customText === undefined) {
+      setInputText('');
+    }
     setSelectedProductToShare(null);
     setSelectedImageToShare(null);
     setShowEmojiPicker(false);
@@ -1041,30 +1053,50 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
       console.warn('Realtime message dispatch notice:', err);
     }
 
-    // Realistic auto-reply simulation
+    // Realistic WhatsApp Business auto-reply simulation
     setIsTypingSimulated(true);
     setTimeout(() => {
       setIsTypingSimulated(false);
       const replyTime = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
       
-      let replyAuthor = 'Mamadou Sylla';
-      let replyBg = 'bg-teal-600';
+      let replyAuthor = 'SoryOS Business ✅';
+      let replyBg = 'bg-[#008069]';
       let replyText = language === 'fr'
-        ? "Parfait ! Les articles SoryOS sont validés par la communauté 👍"
-        : "Awesome! SoryOS products are 100% community approved 👍";
+        ? "Merci pour votre message ! Notre équipe commerciale WhatsApp Business reste à votre entière disposition."
+        : "Thank you for contacting SoryOS Business! Our sales team is ready to assist you.";
 
-      if (activeChat.id === 'seller-support') {
-        replyAuthor = 'Boutique SoryOS ✅';
-        replyBg = 'bg-orange-600';
+      const lower = sentText.toLowerCase();
+
+      if (lower.includes('catalogue') || lower.includes('produit') || lower.includes('article') || lower.includes('voir')) {
         replyText = language === 'fr'
-          ? "Merci pour votre message ! Notre centre logistique prépare les expéditions en 24h avec garantie satisfait ou remboursé."
-          : "Thank you for reaching out! Our logistics center prepares shipments in 24h with money back guarantee.";
-      } else if (sentText.toLowerCase().includes('prix') || sentText.toLowerCase().includes('promo') || sentText.toLowerCase().includes('code')) {
+          ? "🛍️ Bienvenue dans notre catalogue officiel direct usine ! Vous pouvez consulter tous nos articles certifiés en cliquant sur le bouton 'Catalogue' en haut à droite ou commander directement dans cette discussion."
+          : "🛍️ Welcome to our official factory direct catalog! You can browse all items by clicking the top 'Catalog' button or order directly in this chat.";
+      } else if (lower.includes('livraison') || lower.includes('délai') || lower.includes('suivi') || lower.includes('colis')) {
+        replyText = language === 'fr'
+          ? "📦 Expédition & Livraison SoryOS Business :\n• Traitement et contrôle qualité en entrepôt sous 24h.\n• Livraison suivie en 2 à 5 jours ouvrés à domicile ou en point relais.\n• Remise en main propre contre signature avec numéro de suivi en temps réel."
+          : "📦 SoryOS Business Shipping & Delivery:\n• Warehouse quality inspection within 24h.\n• Tracked delivery within 2 to 5 business days.\n• Signature required with live tracking code.";
+      } else if (lower.includes('paiement') || lower.includes('payer') || lower.includes('orange') || lower.includes('wave') || lower.includes('carte')) {
+        replyText = language === 'fr'
+          ? "💳 Moyens de Paiement WhatsApp Business :\n• Orange Money officiel : +224 621 09 03 88\n• Wave & Virement bancaire sécurisé\n• Carte Bancaire (Visa / Mastercard)\n• Paiement à la livraison après inspection de votre colis."
+          : "💳 WhatsApp Business Payment Methods:\n• Official Orange Money: +224 621 09 03 88\n• Wave & Secure Bank Transfer\n• Credit/Debit Card\n• Pay on delivery after inspecting your package.";
+      } else if (lower.includes('devis') || lower.includes('gros') || lower.includes('revendeur') || lower.includes('quantité')) {
+        replyText = language === 'fr'
+          ? "🏷️ Tarifs Achat en Gros & Revendeurs :\nBénéficiez de -30% de remise immédiate dès 5 pièces d'un même article avec facture proforma certifiée SoryOS Import. Utilisez le code promo exclusif GROS30 lors de votre commande !"
+          : "🏷️ Wholesale & Reseller Pricing:\nGet -30% off on 5+ units with certified SoryOS Import proforma invoice. Use promo code GROS30 at checkout!";
+      } else if (lower.includes('garantie') || lower.includes('retour') || lower.includes('rembourse')) {
+        replyText = language === 'fr'
+          ? "🛡️ Garantie Professionnelle SoryOS :\n• 90 jours de protection acheteur intégrale.\n• 15 jours de retours gratuits sans justification.\n• Remplacement à neuf ou remboursement immédiat en cas de défaut usine."
+          : "🛡️ SoryOS Professional Guarantee:\n• 90-day comprehensive buyer protection.\n• 15-day hassle-free returns.\n• Immediate replacement or refund on any factory defect.";
+      } else if (lower.includes('conseiller') || lower.includes('humain') || lower.includes('parler') || lower.includes('téléphone')) {
+        replyText = language === 'fr'
+          ? "👨‍💼 Vous êtes mis en relation avec notre responsable commercial d'astreinte WhatsApp (+224 621 09 03 88). Un instant, nous traitons votre dossier."
+          : "👨‍💼 Connecting you with a SoryOS sales specialist. You can also reach our direct hotline at +224 621 09 03 88.";
+      } else if (activeChat.isGroup) {
         replyAuthor = 'Fatoumata Diallo';
         replyBg = 'bg-rose-500';
         replyText = language === 'fr'
-          ? "Profitez bien du code promo SORYOS20 pour -20% sur tout le catalogue !"
-          : "Make sure to use promo code SORYOS20 for -20% off all catalog items!";
+          ? "Top ! Les articles SoryOS sont validés par les membres de la communauté 👍"
+          : "Awesome! SoryOS products are 100% community approved 👍";
       }
 
       const autoReply: ChatMessage = {
@@ -1645,10 +1677,17 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
         >
           {/* Active Chat Header */}
           <div className="p-2.5 sm:p-3 bg-zinc-100 dark:bg-[#202c33] border-b border-zinc-200 dark:border-zinc-800 flex items-center justify-between shrink-0 shadow-xs">
-            <div className="flex items-center gap-2.5 sm:gap-3">
+            <div 
+              onClick={() => setIsBusinessProfileOpen(true)}
+              className="flex items-center gap-2.5 sm:gap-3 cursor-pointer group hover:opacity-90 transition-opacity"
+              title="Toucher pour voir le profil professionnel WhatsApp"
+            >
               {/* Back button on mobile */}
               <button
-                onClick={() => setMobileView('list')}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMobileView('list');
+                }}
                 className="p-1.5 -ml-1 text-zinc-600 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700 rounded-full md:hidden cursor-pointer"
                 aria-label="Retour"
               >
@@ -1656,7 +1695,7 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
               </button>
 
               <div className="relative">
-                <div className={`w-10 h-10 rounded-full ${activeChat.avatarBg} text-white font-bold flex items-center justify-center text-sm shadow-xs`}>
+                <div className={`w-10 h-10 rounded-full ${activeChat.avatarBg} text-white font-bold flex items-center justify-center text-sm shadow-xs group-hover:scale-105 transition-transform`}>
                   {activeChat.avatarText}
                 </div>
                 {activeChat.online && (
@@ -1667,6 +1706,7 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
               <div>
                 <h4 className="font-bold text-xs sm:text-sm text-zinc-900 dark:text-zinc-100 flex items-center gap-1.5">
                   <span>{activeChat.name}</span>
+                  <BadgeCheck className="w-4 h-4 text-emerald-500 fill-emerald-500/20 shrink-0" />
                   {activeChat.isGroup && (
                     <Users className="w-3.5 h-3.5 text-zinc-400" />
                   )}
@@ -1677,16 +1717,27 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
                       {language === 'fr' ? 'en train d’écrire...' : 'typing...'}
                     </span>
                   ) : (
-                    <span>{activeChat.statusText}</span>
+                    <span>Compte professionnel officiel • Ouvert</span>
                   )}
                 </p>
               </div>
             </div>
 
-            {/* Real-time Backend Sync Indicator & Auth */}
+            {/* Real-time Backend Sync Indicator, Business Catalog & Calls */}
             <div className="flex items-center gap-1.5 sm:gap-2">
+              {/* WhatsApp Business Catalog Button */}
+              <button
+                type="button"
+                onClick={() => setIsCatalogOpen(true)}
+                className="flex items-center gap-1 px-2.5 py-1.5 bg-[#008069] hover:bg-[#00705b] text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer shrink-0"
+                title="Consulter le catalogue de l'entreprise"
+              >
+                <Store className="w-4 h-4" />
+                <span className="hidden sm:inline font-bold">Catalogue</span>
+              </button>
+
               <div 
-                className={`hidden sm:flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                className={`hidden lg:flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
                   isFirestoreConnected
                     ? 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
                     : 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-300 dark:border-amber-800'
@@ -1694,11 +1745,11 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
                 title={isFirestoreConnected ? "Base de données Firebase Firestore synchronisée en temps réel" : "Mode local"}
               >
                 <span className={`w-1.5 h-1.5 rounded-full ${isFirestoreConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
-                <span>{isFirestoreConnected ? 'Firebase Live' : 'Hors-ligne'}</span>
+                <span>{isFirestoreConnected ? 'Live' : 'Hors-ligne'}</span>
               </div>
 
               {firebaseUser ? (
-                <div className="hidden lg:flex items-center gap-1 text-[11px] text-zinc-600 dark:text-zinc-300 bg-zinc-200/60 dark:bg-zinc-800 px-2 py-0.5 rounded-full">
+                <div className="hidden xl:flex items-center gap-1 text-[11px] text-zinc-600 dark:text-zinc-300 bg-zinc-200/60 dark:bg-zinc-800 px-2 py-0.5 rounded-full">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                   <span className="max-w-[80px] truncate">{firebaseUser.displayName || firebaseUser.email?.split('@')[0]}</span>
                   <button 
@@ -1709,23 +1760,7 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
                     ×
                   </button>
                 </div>
-              ) : (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      await loginFirebase();
-                    } catch (err) {
-                      console.warn('Login error:', err);
-                    }
-                  }}
-                  className="hidden sm:flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium bg-zinc-200 hover:bg-zinc-300 dark:bg-zinc-800 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-200 transition-colors cursor-pointer"
-                  title="Se connecter avec Google pour tester la synchronisation multi-utilisateurs en direct"
-                >
-                  <LogIn className="w-3 h-3 text-emerald-500" />
-                  <span>Google Auth</span>
-                </button>
-              )}
+              ) : null}
 
               <button
                 onClick={() => setActiveCallContact({ name: activeChat.name, isVideo: false })}
@@ -2029,6 +2064,14 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
           </div>
 
           {/* ================= WhatsApp Bottom Bar ================= */}
+          <WhatsAppQuickRepliesBar
+            onSelectQuickReply={(msg) => {
+              setInputText(msg);
+            }}
+            onOpenCatalog={() => setIsCatalogOpen(true)}
+            language={language}
+          />
+
           <div className="p-2 sm:p-3 bg-zinc-100 dark:bg-[#202c33] border-t border-zinc-200 dark:border-zinc-800 shrink-0">
             
             {/* Replying banner preview if active */}
@@ -2686,6 +2729,7 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
       )}
 
       </div>
+
       <ChatSettingsModal
         isOpen={isSettingsModalOpen}
         onClose={() => setIsSettingsModalOpen(false)}
@@ -2695,6 +2739,40 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
         onBubbleColorChange={setBubbleColor}
         visibilityStatus={visibilityStatus}
         onVisibilityStatusChange={setVisibilityStatus}
+      />
+
+      {/* WhatsApp Business Catalog Modal */}
+      <WhatsAppCatalogModal
+        isOpen={isCatalogOpen}
+        onClose={() => setIsCatalogOpen(false)}
+        products={products}
+        currency={currency}
+        onShareProductToChat={(prod) => {
+          setSelectedProductToShare(prod);
+          setIsCatalogOpen(false);
+          setInputText((prev) => prev ? `${prev} [Produit: ${prod.name}]` : (language === 'fr' ? `Bonjour, je souhaite commander ce produit : ${prod.name}` : `Hello, I would like to order this product: ${prod.name}`));
+        }}
+        onAddToCart={(prod) => {
+          onAddToCart(prod);
+        }}
+        language={language}
+      />
+
+      {/* WhatsApp Business Profile Modal */}
+      <WhatsAppBusinessProfileModal
+        isOpen={isBusinessProfileOpen}
+        onClose={() => setIsBusinessProfileOpen(false)}
+        products={products}
+        currency={currency}
+        onOpenCatalog={() => {
+          setIsBusinessProfileOpen(false);
+          setIsCatalogOpen(true);
+        }}
+        onCallPhone={() => {
+          setIsBusinessProfileOpen(false);
+          setActiveCallContact({ name: "SoryOS Import", isVideo: false });
+        }}
+        language={language}
       />
     </motion.div>
   );
