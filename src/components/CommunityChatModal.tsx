@@ -1005,7 +1005,7 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
 
     // Realistic WhatsApp Business auto-reply simulation
     setIsTypingSimulated(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       setIsTypingSimulated(false);
       const replyTime = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
       
@@ -1049,22 +1049,15 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
           : "Awesome! SoryOS products are 100% community approved 👍";
       }
 
-      const autoReply: ChatMessage = {
-        id: `reply-${Date.now()}`,
-        senderId: 'contact',
-        senderName: replyAuthor,
-        senderAvatar: replyAuthor.slice(0, 2).toUpperCase(),
-        avatarBg: replyBg,
-        text: replyText,
-        timestamp: replyTime,
-        isMe: false,
-        status: 'read',
-        reactions: { '❤️': 1 },
-      };
-
-      setConversations((prev) =>
-        prev.map((c) => (c.id === activeChatId ? { ...c, messages: [...c.messages, autoReply] } : c))
-      );
+      try {
+        await sendMessage(replyText, activeChatId, {
+          senderName: replyAuthor,
+          avatarBg: replyBg,
+          reactions: { '❤️': 1 },
+        });
+      } catch (err) {
+        console.warn('Auto-reply dispatch error:', err);
+      }
     }, 1800);
   };
 
