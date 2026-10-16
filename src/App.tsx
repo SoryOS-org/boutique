@@ -917,7 +917,6 @@ export default function App() {
         onOpenWishlist={() => setIsWishlistOpen(true)}
         onOpenCart={() => setIsCartOpen(true)}
         onOpenAccount={() => setIsAccountOpen(true)}
-        onOpenMessenger={() => setIsCommunityOpen(true)}
       />
 
       {/* Product Detail Modal PDP */}
@@ -1113,21 +1112,6 @@ export default function App() {
       >
         <MessageSquareText className="w-4 h-4 text-orange-400" />
         <span>Assistance 24/7</span>
-      </button>
-
-      {/* Floating Messenger / WhatsApp Action Bubble (Visible on mobile & desktop) */}
-      <button
-        type="button"
-        onClick={() => setIsCommunityOpen(true)}
-        className="fixed bottom-20 right-4 md:bottom-5 md:right-5 z-40 flex items-center gap-2 px-3.5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-2xl shadow-emerald-950/40 text-xs font-bold transition-all hover:scale-105 active:scale-95 cursor-pointer border border-emerald-400/50"
-        title="Messenger / WhatsApp SoryOS"
-      >
-        <div className="relative">
-          <MessageCircle className="w-5 h-5 text-white" />
-          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-emerald-600 animate-ping"></span>
-          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-amber-400 ring-2 ring-emerald-600"></span>
-        </div>
-        <span className="font-bold text-xs tracking-tight">Messenger</span>
       </button>
 
     </div>

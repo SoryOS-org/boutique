@@ -136,13 +136,6 @@ export const Header: React.FC<HeaderProps> = ({
             {t.choiceSelection}
           </button>
           <button
-            onClick={onOpenCommunity}
-            className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors whitespace-nowrap shrink-0 hover:underline underline-offset-4 cursor-pointer font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5"
-          >
-            <MessageCircle className="w-4 h-4" />
-            <span>{t.messenger}</span>
-          </button>
-          <button
             onClick={onOpenTracker}
             className="hover:text-zinc-950 dark:hover:text-white transition-colors whitespace-nowrap shrink-0 hover:underline underline-offset-4 cursor-pointer"
           >
@@ -158,19 +151,6 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Zone 3: Primary action & quick controls */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-          
-          {/* Messenger WhatsApp Button (Prominent & Visible on all screens) */}
-          <button
-            onClick={onOpenCommunity}
-            title="Messenger / WhatsApp"
-            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm hover:shadow cursor-pointer shrink-0"
-          >
-            <div className="relative">
-              <MessageCircle className="w-4 h-4" />
-              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-amber-400 ring-1 ring-white"></span>
-            </div>
-            <span className="font-bold text-xs tracking-tight">{t.messenger}</span>
-          </button>
 
           {/* Language Switcher Selector */}
           <button
