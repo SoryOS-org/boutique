@@ -603,33 +603,11 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
 
   // Send completed voice note to chat
   const sendVoiceMessage = async (audioUrl: string, durationStr: string, durationSeconds: number) => {
-    const timeStr = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
     const voicePayload = {
       duration: durationStr,
       seconds: durationSeconds,
       audioUrl,
     };
-
-    const newMsg: ChatMessage = {
-      id: `vn-${Date.now()}`,
-      senderId: firebaseUser ? firebaseUser.uid : 'me',
-      senderName: user.name || firebaseUser?.displayName || (language === 'fr' ? 'Moi' : 'Me'),
-      senderAvatar: user.name ? user.name.slice(0, 2).toUpperCase() : 'ME',
-      avatarBg: 'bg-orange-600',
-      text: language === 'fr' ? "🎤 Note vocale WhatsApp" : "🎤 WhatsApp Voice Note",
-      timestamp: timeStr,
-      isMe: true,
-      status: 'sent',
-      voiceNote: voicePayload,
-    };
-
-    setConversations((prev) =>
-      prev.map((c) =>
-        c.id === activeChatId
-          ? { ...c, lastMessageTime: timeStr, messages: [...c.messages, newMsg] }
-          : c
-      )
-    );
 
     if (previewAudioRef.current) {
       previewAudioRef.current.pause();
@@ -1001,34 +979,6 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
     const sentText = messageBody.trim() || (selectedImageToShare ? (language === 'fr' ? "📷 Photo partagée" : "📷 Shared photo") : (language === 'fr' ? "Regardez cet article direct usine !" : "Check out this direct factory deal!"));
     const productToSend = customProduct || selectedProductToShare || undefined;
     const imageToSend = selectedImageToShare || undefined;
-
-    const newMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      senderId: firebaseUser ? firebaseUser.uid : 'me',
-      senderName: user.name || firebaseUser?.displayName || (language === 'fr' ? 'Moi' : 'Me'),
-      senderAvatar: user.name ? user.name.slice(0, 2).toUpperCase() : 'ME',
-      avatarBg: 'bg-orange-600',
-      text: sentText,
-      timestamp: timeStr,
-      isMe: true,
-      status: 'sent',
-      product: productToSend,
-      image: imageToSend,
-      quotedMessage: replyingToMessage
-        ? { sender: replyingToMessage.senderName, text: replyingToMessage.text }
-        : undefined,
-    };
-
-    setConversations((prev) =>
-      prev.map((conv) => {
-        if (conv.id !== activeChatId) return conv;
-        return {
-          ...conv,
-          lastMessageTime: timeStr,
-          messages: [...conv.messages, newMsg],
-        };
-      })
-    );
 
     if (customText === undefined) {
       setInputText('');
