@@ -1271,7 +1271,7 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
       )}
 
       {/* ================= MAIN WHATSAPP WINDOW ================= */}
-      <div className="relative w-full h-full sm:h-[94vh] sm:max-h-[880px] max-w-6xl bg-white dark:bg-[#111b21] sm:rounded-2xl shadow-2xl border border-zinc-300 dark:border-zinc-800 flex overflow-hidden">
+      <div className="relative w-full h-[100dvh] sm:h-[92vh] sm:max-h-[860px] max-w-6xl bg-white dark:bg-[#111b21] sm:rounded-2xl shadow-2xl border border-zinc-300 dark:border-zinc-800 flex overflow-hidden flex-col sm:flex-row">
         
         {/* ================= LEFT COLUMN: Navigation Tabs & List ================= */}
         <div 
