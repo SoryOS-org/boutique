@@ -1249,6 +1249,14 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
 
             <div className="flex items-center gap-1">
               <button 
+                onClick={() => setShowNewChatModal(true)}
+                className="p-2 text-zinc-500 hover:text-emerald-600 dark:text-zinc-400 dark:hover:text-emerald-400 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+                title="Nouvelle discussion (Trouver un utilisateur ou créer un groupe)"
+                aria-label="Nouvelle discussion"
+              >
+                <Plus className="w-5 h-5" />
+              </button>
+              <button 
                 onClick={() => setIsSettingsModalOpen(true)}
                 className="p-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
                 aria-label="Settings"
