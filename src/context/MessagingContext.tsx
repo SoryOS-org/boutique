@@ -163,7 +163,7 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
               avatarBg: data.avatarBg || 'bg-emerald-600',
               text: data.text || '',
               timestamp: parsedTime,
-              isMe: data.senderId === firebaseUser.uid,
+              isMe: data.isMe !== undefined ? data.isMe : (firebaseUser ? data.senderId === firebaseUser.uid : false),
               status: data.status || 'read',
               product: data.product,
               voiceNote: data.voiceNote,
@@ -202,19 +202,20 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     const nowIso = new Date().toISOString();
     const msgId = `msg-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
-    const currentUid = firebaseUser ? firebaseUser.uid : 'current-user';
-    const currentName = firebaseUser?.displayName || 'Moi';
-    const currentAvatar = (currentName.slice(0, 2)).toUpperCase();
+    const currentUid = extra?.senderId || (firebaseUser ? firebaseUser.uid : 'current-user');
+    const currentName = extra?.senderName || (firebaseUser?.displayName || 'Moi');
+    const currentAvatar = extra?.senderName ? extra.senderName.slice(0, 2).toUpperCase() : (firebaseUser?.displayName?.slice(0, 2) || 'ME').toUpperCase();
+    const isThisMe = extra?.isMe !== undefined ? extra.isMe : (currentUid === firebaseUser?.uid || currentUid === 'current-user' || currentUid === 'me');
 
     const localMsg: ChatMessage = {
       id: msgId,
       senderId: currentUid,
       senderName: currentName,
       senderAvatar: currentAvatar,
-      avatarBg: 'bg-emerald-600',
+      avatarBg: extra?.avatarBg || (isThisMe ? 'bg-orange-600' : 'bg-[#008069]'),
       text,
       timestamp: new Date(),
-      isMe: true,
+      isMe: isThisMe,
       status: 'sent',
       product: extra?.product,
       voiceNote: extra?.voiceNote,
@@ -245,13 +246,14 @@ export const MessagingProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         const payload: Record<string, any> = {
           id: msgId,
           chatId: targetChat,
-          senderId: firebaseUser.uid,
+          senderId: currentUid,
           senderName: currentName,
           senderAvatar: currentAvatar,
-          avatarBg: 'bg-emerald-600',
+          avatarBg: extra?.avatarBg || (isThisMe ? 'bg-orange-600' : 'bg-[#008069]'),
           text,
           timestamp: nowIso,
           status: 'sent',
+          isMe: isThisMe,
         };
 
         if (extra?.product) {

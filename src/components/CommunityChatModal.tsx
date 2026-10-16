@@ -437,7 +437,7 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
         timeStr = 'À l’instant';
       }
 
-      const isMine = firebaseUser ? m.senderId === firebaseUser.uid : (m.senderId === 'me' || m.isMe);
+      const isMine = m.isMe !== undefined ? m.isMe : (firebaseUser ? m.senderId === firebaseUser.uid : (m.senderId === 'me' || m.isMe));
 
       return {
         id: m.id,
@@ -1051,8 +1051,10 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
 
       try {
         await sendMessage(replyText, activeChatId, {
+          senderId: 'soryos-bot',
           senderName: replyAuthor,
           avatarBg: replyBg,
+          isMe: false,
           reactions: { '❤️': 1 },
         });
       } catch (err) {
