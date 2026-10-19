@@ -1261,7 +1261,22 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
+              {/* Header Search Input */}
+              <div className="relative hidden sm:block w-36 lg:w-44">
+                <Search className="w-3.5 h-3.5 text-zinc-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    if (activeTab !== 'chats') setActiveTab('chats');
+                  }}
+                  placeholder={language === 'fr' ? "Rechercher..." : "Search..."}
+                  className="w-full pl-8 pr-2.5 py-1.5 bg-white dark:bg-[#111b21] border border-zinc-300 dark:border-zinc-700 rounded-lg text-xs text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+
               <button 
                 onClick={() => setShowNewChatModal(true)}
                 className="p-2 text-zinc-500 hover:text-emerald-600 dark:text-zinc-400 dark:hover:text-emerald-400 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
