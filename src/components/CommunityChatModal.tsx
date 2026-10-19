@@ -22,6 +22,8 @@ import { RealVoiceRecorder, generateDemoVoiceWav, VoiceDictation } from '../util
 import { ImageLightbox } from './ImageLightbox';
 import { GoogleIcon } from './GoogleIcon';
 import { NewUserSearchModal } from './NewUserSearchModal';
+import { LinkPreview } from './LinkPreview';
+import { extractUrl, findProductFromUrl } from '../utils/urlParser';
 
 export interface ChatMessage {
   id: string;
@@ -1925,6 +1927,16 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
                   <p className="text-xs sm:text-sm whitespace-pre-wrap leading-relaxed">
                     {msg.text}
                   </p>
+
+                  {/* Link Preview */}
+                  {(() => {
+                    const url = extractUrl(msg.text);
+                    if (url && !msg.product) {
+                      const product = findProductFromUrl(url, products);
+                      return <LinkPreview url={url} product={product} currency={currency} onAddToCart={onAddToCart} />;
+                    }
+                    return null;
+                  })()}
 
                   {/* Attached Product Card */}
                   {msg.product && (
