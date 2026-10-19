@@ -1,0 +1,6 @@
+{
+  "name": "AlyExpress Global Store",
+  "description": "Une expérience e-commerce moderne inspirée d'AliExpress avec sélection Choice, offres directes usine, suivi de commande et livraison mondiale.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

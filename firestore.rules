@@ -1,0 +1,74 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Security Primitives
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['id', 'displayName', 'status']) &&
+             data.keys().hasOnly(['id', 'displayName', 'email', 'photoURL', 'memberTier', 'coinsBalance', 'status', 'lastSeen']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.displayName is string && data.displayName.size() <= 100 &&
+             (!('email' in data) || (data.email is string && data.email.size() <= 150)) &&
+             (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 500)) &&
+             (!('memberTier' in data) || (data.memberTier is string && data.memberTier.size() <= 50)) &&
+             (!('coinsBalance' in data) || (data.coinsBalance is number && data.coinsBalance >= 0)) &&
+             data.status in ['online', 'offline'];
+    }
+
+    function isValidChat(data) {
+      return data.keys().hasAll(['id', 'participants']) &&
+             data.keys().hasOnly(['id', 'name', 'participants', 'lastMessage', 'lastMessageTime']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.participants is list && data.participants.size() <= 100;
+    }
+
+    function isValidMessage(data) {
+      return data.keys().hasAll(['id', 'chatId', 'senderId', 'text']) &&
+             data.keys().hasOnly(['id', 'chatId', 'senderId', 'senderName', 'senderAvatar', 'avatarBg', 'text', 'timestamp', 'status', 'voiceNote', 'product', 'image', 'quotedMessage', 'reactions']) &&
+             data.id is string && data.id.size() <= 128 &&
+             data.chatId is string && data.chatId.size() <= 128 &&
+             data.senderId is string && data.senderId.size() <= 128 &&
+             data.text is string && data.text.size() <= 2000;
+    }
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Users (Presence and Profiles)
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidId(userId) && request.auth.uid == userId && isValidUser(incoming()) && incoming().id == userId;
+      allow update: if isSignedIn() && isValidId(userId) && request.auth.uid == userId && isValidUser(incoming()) && incoming().id == userId;
+    }
+
+    // Chats
+    match /chats/{chatId} {
+      allow list: if isSignedIn();
+      allow get: if isSignedIn() && isValidId(chatId) && (chatId == 'group-club' || (resource != null && resource.data.participants.hasAny([request.auth.uid])));
+      allow create: if isSignedIn() && isValidId(chatId) && isValidChat(incoming()) && (chatId == 'group-club' || incoming().participants.hasAny([request.auth.uid]));
+      allow update: if isSignedIn() && isValidId(chatId) && (chatId == 'group-club' || (resource != null && resource.data.participants.hasAny([request.auth.uid]))) &&
+                   incoming().diff(existing()).affectedKeys().hasOnly(['lastMessage', 'lastMessageTime']);
+
+      // Messages Subcollection
+      match /messages/{messageId} {
+        allow list: if isSignedIn() && isValidId(chatId) && (chatId == 'group-club' || get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]));
+        allow get: if isSignedIn() && isValidId(chatId) && isValidId(messageId) && (chatId == 'group-club' || get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]));
+        allow create: if isSignedIn() && isValidId(chatId) && isValidId(messageId) &&
+                     isValidMessage(incoming()) && incoming().senderId == request.auth.uid && incoming().chatId == chatId &&
+                     (chatId == 'group-club' || get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]));
+        allow update: if isSignedIn() && isValidId(chatId) && isValidId(messageId) &&
+                     (chatId == 'group-club' || get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid])) &&
+                     (incoming().diff(existing()).affectedKeys().hasOnly(['reactions']) || existing().senderId == request.auth.uid);
+        allow delete: if isSignedIn() && isValidId(chatId) && isValidId(messageId) &&
+                     existing().senderId == request.auth.uid;
+      }
+    }
+  }
+}
