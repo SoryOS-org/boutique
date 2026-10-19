@@ -28,7 +28,7 @@ service cloud.firestore {
 
     function isValidMessage(data) {
       return data.keys().hasAll(['id', 'chatId', 'senderId', 'text']) &&
-             data.keys().hasOnly(['id', 'chatId', 'senderId', 'senderName', 'senderAvatar', 'avatarBg', 'text', 'timestamp', 'status', 'voiceNote', 'product', 'image', 'quotedMessage', 'reactions']) &&
+             data.keys().hasOnly(['id', 'chatId', 'senderId', 'senderName', 'senderAvatar', 'avatarBg', 'text', 'timestamp', 'status', 'voiceNote', 'product', 'image', 'quotedMessage', 'reactions', 'isMe']) &&
              data.id is string && data.id.size() <= 128 &&
              data.chatId is string && data.chatId.size() <= 128 &&
              data.senderId is string && data.senderId.size() <= 128 &&

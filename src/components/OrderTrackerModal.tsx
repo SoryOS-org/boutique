@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Search, CheckCircle2, Clock, Plane, Truck, Package, MapPin } from 'lucide-react';
 import { Order } from '../types';
+import { generateOrderReceiptPDF } from '../utils/pdfGenerator';
 
 interface OrderTrackerModalProps {
   isOpen: boolean;
@@ -156,7 +157,19 @@ export const OrderTrackerModal: React.FC<OrderTrackerModalProps> = ({
             })}
           </div>
 
-          <div className="pt-2 text-center">
+          <div className="pt-4 text-center space-y-3">
+            {recentOrders.find(o => o.trackingNumber === activeTracking) && (
+              <button
+                onClick={() => {
+                  const order = recentOrders.find(o => o.trackingNumber === activeTracking);
+                  if (order) generateOrderReceiptPDF(order);
+                }}
+                className="w-full py-2.5 px-4 text-sm font-semibold text-zinc-900 bg-zinc-100 hover:bg-zinc-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-white rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-2"
+              >
+                <Package className="w-4 h-4" />
+                Télécharger le reçu (PDF)
+              </button>
+            )}
             <button
               onClick={onClose}
               className="text-xs text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 underline cursor-pointer"
