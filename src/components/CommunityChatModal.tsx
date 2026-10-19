@@ -7,7 +7,7 @@ import {
   PhoneCall, PhoneIncoming, PhoneOutgoing, PhoneMissed, Camera, FileText,
   MapPin, Tag, Plus, Pin, MicOff, Volume2, VolumeX, Reply, Trash2,
   Copy, CircleDot, ChevronRight, Share2, AlertCircle, Settings, LogIn,
-  Store, BadgeCheck, Clock, CreditCard
+  Store, BadgeCheck, Clock, CreditCard, ShieldCheck
 } from 'lucide-react';
 import { useMessaging } from '../context/MessagingContext';
 import { ChatSettingsModal } from './ChatSettingsModal';
@@ -1713,7 +1713,13 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
                       {language === 'fr' ? 'en train d’écrire...' : 'typing...'}
                     </span>
                   ) : (
-                    <span>Compte professionnel officiel • Ouvert</span>
+                    <>
+                      <span>Compte professionnel officiel • Ouvert</span>
+                      <span className="inline-flex items-center gap-0.5 text-[10px] bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 px-1 rounded-sm border border-emerald-200 dark:border-emerald-800">
+                        <ShieldCheck className="w-2.5 h-2.5" />
+                        {language === 'fr' ? 'Chiffrement E2E' : 'End-to-End Encrypted'}
+                      </span>
+                    </>
                   )}
                 </p>
               </div>
