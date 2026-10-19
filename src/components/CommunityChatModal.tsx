@@ -1450,9 +1450,21 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
                         <div className={`w-12 h-12 rounded-full ${conv.avatarBg} text-white font-bold flex items-center justify-center text-sm shadow-xs`}>
                           {conv.avatarText}
                         </div>
-                        {conv.online && (
-                          <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-[#111b21]"></span>
-                        )}
+                        {/* Real Firebase Presence Indicator */}
+                        {(() => {
+                          const matchingPresence = Object.values(presenceUsers).find(
+                            p => p.displayName.toLowerCase() === conv.name.toLowerCase()
+                          );
+                          const isOnline = matchingPresence ? matchingPresence.status === 'online' : conv.online;
+                          return (
+                            <span 
+                              className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full border-2 border-white dark:border-[#111b21] ${
+                                isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-zinc-400'
+                              }`}
+                              title={isOnline ? 'En ligne (Firebase)' : 'Hors-ligne'}
+                            ></span>
+                          );
+                        })()}
                       </div>
 
                       <div className="flex-1 min-w-0">
