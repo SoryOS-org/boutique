@@ -55,6 +55,7 @@ export const INITIAL_USER: UserAccount = {
     { code: 'BIENVENUE5', label: '5€ offerts dès 25€ d’achat', minSpendEUR: 25, discountValue: '-5,00 €' },
     { code: 'CHOICEDAY', label: '15€ offerts dès 100€ d’achat Choice', minSpendEUR: 100, discountValue: '-15,00 €' },
   ],
+  notificationPreferences: 'push',
 };
 
 const now = Date.now();

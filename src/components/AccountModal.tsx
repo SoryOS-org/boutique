@@ -39,9 +39,7 @@ export const AccountModal: React.FC<AccountModalProps> = ({
   const [name, setName] = useState(user.name);
   const [email, setEmail] = useState(user.email);
   const [phone, setPhone] = useState(user.savedAddresses[0]?.phone || '+224 621 09 03 88');
-  const [emailAlerts, setEmailAlerts] = useState(true);
-  const [whatsappAlerts, setWhatsappAlerts] = useState(true);
-  const [flashAlerts, setFlashAlerts] = useState(false);
+  const [notificationPreferences, setNotificationPreferences] = useState<'push' | 'email' | 'none'>(user.notificationPreferences || 'push');
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [loginError, setLoginError] = useState<string | null>(null);
 
@@ -92,7 +90,8 @@ export const AccountModal: React.FC<AccountModalProps> = ({
       email,
       savedAddresses: user.savedAddresses.map((addr, idx) => 
         idx === 0 ? { ...addr, phone } : addr
-      )
+      ),
+      notificationPreferences,
     };
     onUpdateUser(updated);
     setSuccessMessage(language === 'fr' ? 'Paramètres enregistrés avec succès !' : 'Settings saved successfully!');
@@ -553,57 +552,24 @@ export const AccountModal: React.FC<AccountModalProps> = ({
                       <span>{language === 'fr' ? 'Préférences de Notifications' : 'Notification Preferences'}</span>
                     </h4>
 
-                    <div className="space-y-3">
-                      <label className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl cursor-pointer">
-                        <div>
-                          <span className="font-bold text-zinc-900 dark:text-zinc-100 block">
-                            {language === 'fr' ? 'Notifications de suivi par Email' : 'Email Tracking Notifications'}
+                    <div className="space-y-2">
+                      {(['push', 'email', 'none'] as const).map((pref) => (
+                        <label key={pref} className="flex items-center gap-3 p-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl cursor-pointer hover:border-orange-500 transition-colors">
+                          <input
+                            type="radio"
+                            name="notifications"
+                            value={pref}
+                            checked={notificationPreferences === pref}
+                            onChange={() => setNotificationPreferences(pref)}
+                            className="w-4 h-4 accent-orange-600"
+                          />
+                          <span className="font-bold text-zinc-900 dark:text-zinc-100 capitalize text-xs">
+                            {pref === 'push' ? (language === 'fr' ? 'Notifications Push (App)' : 'Push Notifications (App)') :
+                             pref === 'email' ? (language === 'fr' ? 'Notifications par Email' : 'Email Notifications') :
+                             (language === 'fr' ? 'Aucune notification' : 'No notifications')}
                           </span>
-                          <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                            {language === 'fr' ? "Recevoir les mises à jour d'expédition en temps réel" : "Receive real-time shipping updates"}
-                          </span>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={emailAlerts}
-                          onChange={(e) => setEmailAlerts(e.target.checked)}
-                          className="w-4 h-4 accent-orange-600 rounded cursor-pointer"
-                        />
-                      </label>
-
-                      <label className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl cursor-pointer">
-                        <div>
-                          <span className="font-bold text-zinc-900 dark:text-zinc-100 block">
-                            {language === 'fr' ? 'Alertes WhatsApp & SMS' : 'WhatsApp & SMS Alerts'}
-                          </span>
-                          <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                            {language === 'fr' ? "Alertes instantanées pour les douanes et la livraison" : "Instant alerts for customs and final delivery"}
-                          </span>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={whatsappAlerts}
-                          onChange={(e) => setWhatsappAlerts(e.target.checked)}
-                          className="w-4 h-4 accent-orange-600 rounded cursor-pointer"
-                        />
-                      </label>
-
-                      <label className="flex items-center justify-between p-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-xl cursor-pointer">
-                        <div>
-                          <span className="font-bold text-zinc-900 dark:text-zinc-100 block">
-                            {language === 'fr' ? 'Alertes Ventes Flash & SuperDeals' : 'Flash Sales & SuperDeals Alerts'}
-                          </span>
-                          <span className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                            {language === 'fr' ? "Être averti des baisses de prix exclusives et des nouveaux arrivages" : "Get notified on exclusive price drops and new arrivals"}
-                          </span>
-                        </div>
-                        <input
-                          type="checkbox"
-                          checked={flashAlerts}
-                          onChange={(e) => setFlashAlerts(e.target.checked)}
-                          className="w-4 h-4 accent-orange-600 rounded cursor-pointer"
-                        />
-                      </label>
+                        </label>
+                      ))}
                     </div>
                   </div>
 

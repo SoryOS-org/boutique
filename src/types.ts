@@ -110,6 +110,7 @@ export interface UserAccount {
     postalCode: string;
     phone: string;
   }>;
+  notificationPreferences: 'push' | 'email' | 'none';
   availableCoupons: Array<{
     code: string;
     label: string;

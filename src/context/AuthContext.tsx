@@ -72,7 +72,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               streakDays: typeof data.streakDays === 'number' ? data.streakDays : 4,
               savedAddresses: data.savedAddresses || INITIAL_USER.savedAddresses,
               availableCoupons: INITIAL_USER.availableCoupons,
-              isGoogleUser: true,
+              notificationPreferences: 'push',
             };
 
             setUser(updatedAccount);
@@ -98,6 +98,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               coinsBalance: 500, // 500 Welcome bonus coins for Google account creation
               status: 'online',
               lastSeen: new Date().toISOString(),
+              notificationPreferences: 'push',
             };
 
             if (fbUser.photoURL) {
@@ -117,6 +118,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               savedAddresses: INITIAL_USER.savedAddresses,
               availableCoupons: INITIAL_USER.availableCoupons,
               isGoogleUser: true,
+              notificationPreferences: 'push',
             };
 
             setUser(newAccount);
@@ -136,6 +138,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             savedAddresses: INITIAL_USER.savedAddresses,
             availableCoupons: INITIAL_USER.availableCoupons,
             isGoogleUser: true,
+            notificationPreferences: 'push',
           };
           setUser(fallbackAccount);
         }
