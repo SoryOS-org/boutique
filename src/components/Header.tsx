@@ -1,8 +1,9 @@
 import React from 'react';
-import { Sun, Moon, Phone, Megaphone, Globe, Users, MessageCircle, User } from 'lucide-react';
+import { Sun, Moon, Phone, Megaphone, Globe, Users, MessageCircle, User, ShoppingBag } from 'lucide-react';
 import { useTheme } from '../ThemeContext';
 import { UserAccount } from '../types';
 import { GoogleIcon } from './GoogleIcon';
+import { AnimatedButton } from './AnimatedButton';
 
 export interface HeaderProps {
   cartCount: number;
@@ -82,6 +83,17 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { isDark, toggleTheme } = useTheme();
   const t = translations[language];
+
+  const [triggerCartAnimation, setTriggerCartAnimation] = React.useState(false);
+  const prevCartCount = React.useRef(cartCount);
+
+  React.useEffect(() => {
+    if (cartCount > prevCartCount.current) {
+      setTriggerCartAnimation(true);
+      setTimeout(() => setTriggerCartAnimation(false), 500);
+    }
+    prevCartCount.current = cartCount;
+  }, [cartCount]);
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-md border-b border-zinc-200 dark:border-zinc-800 transition-colors">
@@ -186,6 +198,21 @@ export const Header: React.FC<HeaderProps> = ({
               <Moon className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-zinc-700 transition-transform hover:-rotate-12" />
             )}
           </button>
+
+          {/* Cart Button */}
+          <AnimatedButton
+            onClick={onOpenCart}
+            triggerAnimation={triggerCartAnimation}
+            className="p-2 relative text-zinc-700 dark:text-zinc-300 hover:text-orange-600 dark:hover:text-orange-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-all border border-zinc-200 dark:border-zinc-800"
+            title={t.cart}
+          >
+            <ShoppingBag className="w-5 h-5" />
+            {cartCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 bg-orange-600 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+                {cartCount}
+              </span>
+            )}
+          </AnimatedButton>
 
           {/* Account / Google Login Button */}
           <button
