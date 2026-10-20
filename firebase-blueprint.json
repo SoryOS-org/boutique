@@ -48,12 +48,33 @@
         "lastMessageTime": { "type": "string", "maxLength": 50, "description": "Last message time string" }
       },
       "required": ["id", "participants"]
+    },
+    "order": {
+      "title": "Order",
+      "description": "Customer purchase order",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128, "description": "Order ID" },
+        "trackingNumber": { "type": "string", "maxLength": 128, "description": "Tracking code" },
+        "status": { "type": "string", "enum": ["processing", "shipped", "customs", "out_for_delivery", "delivered"], "description": "Order status" },
+        "totalEUR": { "type": "number", "description": "Total order amount in EUR" },
+        "currency": { "type": "string", "maxLength": 10, "description": "Currency code" },
+        "items": { "type": "array", "description": "List of ordered items" },
+        "customer": { "type": "object", "description": "Customer shipping info" },
+        "date": { "type": "string", "maxLength": 50, "description": "Date placed" },
+        "estimatedDelivery": { "type": "string", "maxLength": 50, "description": "Estimated delivery date" }
+      },
+      "required": ["id", "trackingNumber", "status", "totalEUR"]
     }
   },
   "firestore": {
     "users/{userId}": {
       "schema": "user",
       "description": "User presence documents"
+    },
+    "users/{userId}/orders/{orderId}": {
+      "schema": "order",
+      "description": "Customer orders subcollection"
     },
     "chats/{chatId}": {
       "schema": "chat",

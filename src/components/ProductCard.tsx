@@ -89,6 +89,27 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   }
 
   const [imageError, setImageError] = useState(false);
+  const [imgSrc, setImgSrc] = useState<string>(product.image);
+  const [retryCount, setRetryCount] = useState(0);
+
+  React.useEffect(() => {
+    setImgSrc(product.image);
+    setImageError(false);
+    setRetryCount(0);
+  }, [product.image]);
+
+  const handleImageError = () => {
+    if (retryCount === 0) {
+      const filename = imgSrc.split('/').pop();
+      if (filename && !imgSrc.startsWith('/images/')) {
+        setRetryCount(1);
+        setImgSrc(`/images/${filename}`);
+        return;
+      }
+    }
+    setImageError(true);
+  };
+
   const [addedAnim, setAddedAnim] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -145,10 +166,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({
       >
         {!imageError ? (
           <img
-            src={product.image}
+            src={imgSrc}
             alt={product.name}
-            referrerPolicy="no-referrer"
-            onError={() => setImageError(true)}
+            loading="lazy"
+            decoding="async"
+            onError={handleImageError}
             className="w-full h-full object-cover card-image-zoom transition-transform duration-700 group-hover:scale-105"
           />
         ) : (

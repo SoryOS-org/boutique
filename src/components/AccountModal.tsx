@@ -98,9 +98,9 @@ export const AccountModal: React.FC<AccountModalProps> = ({
     setTimeout(() => setSuccessMessage(null), 3000);
   };
 
-  // Filter orders for this user
+  // Filter orders strictly for this user
   const userOrders = isConnectedWithGoogle && user.email
-    ? orders.filter(o => o.customer.email.toLowerCase() === user.email.toLowerCase() || orders.length <= 3)
+    ? orders.filter(o => o.customer.email.toLowerCase() === user.email.toLowerCase())
     : orders;
 
   return (

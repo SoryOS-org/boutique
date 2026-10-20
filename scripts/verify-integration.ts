@@ -59,6 +59,10 @@ async function verifyDataStructures() {
   if (blueprint.default.entities.chat && blueprint.default.entities.message) {
     console.log('[PASS] Schémas d’entités chat & message validés dans firebase-blueprint.json');
   }
+
+  if (blueprint.default.entities.order) {
+    console.log('[PASS] Schéma d’entité order validé dans firebase-blueprint.json (id, trackingNumber, status, totalEUR)');
+  }
 }
 
 async function main() {

@@ -101,7 +101,17 @@ export const Header: React.FC<HeaderProps> = ({
       {/* Top Announcement Bar with Official Phone Number */}
       <div className="bg-gradient-to-r from-orange-600 via-amber-600 to-orange-600 text-white text-[11px] font-medium py-1.5 px-4 text-center tracking-wide flex items-center justify-center gap-2 shadow-xs">
         <Phone className="w-3.5 h-3.5 animate-pulse" />
-        <span>{t.announcement} <strong className="font-mono tracking-wider underline underline-offset-2">621 09 03 88</strong> (24/7)</span>
+        <span>{t.announcement} </span>
+        <a
+          href="https://wa.me/224621090388"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-mono font-bold tracking-wider underline underline-offset-2 hover:text-amber-200 transition-colors cursor-pointer"
+          title="Ouvrir WhatsApp officiel (+224 621 09 03 88)"
+        >
+          621 09 03 88
+        </a>
+        <span>(24/7)</span>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 sm:gap-8">

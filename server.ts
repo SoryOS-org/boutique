@@ -15,6 +15,12 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.use(express.json());
 
+// Serve static images across all route aliases with caching for fast mobile loading
+app.use('/images', express.static(path.resolve(__dirname, 'public/images'), { maxAge: '7d' }));
+app.use('/assets/images', express.static(path.resolve(__dirname, 'public/assets/images'), { maxAge: '7d' }));
+app.use('/src/assets/images', express.static(path.resolve(__dirname, 'public/assets/images'), { maxAge: '7d' }));
+app.use(express.static(path.resolve(__dirname, 'public'), { maxAge: '7d' }));
+
 const getGenAIClient = () => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;

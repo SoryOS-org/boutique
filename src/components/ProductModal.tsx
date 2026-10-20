@@ -50,12 +50,17 @@ export const ProductModal: React.FC<ProductModalProps> = ({
     if (product?.variants?.[0]) {
       setSelectedVariant(product.variants[0]);
     }
+    if (product?.image) {
+      setModalImgSrc(product.image);
+    }
   }, [product]);
+
+  const [modalImgSrc, setModalImgSrc] = useState(product?.image || '');
 
   if (!product) return null;
 
   const currentVariant = selectedVariant || product.variants[0];
-  const allImages = [product.image];
+  const allImages = [modalImgSrc || product.image];
 
   const discountPercent = Math.round(
     ((product.originalPriceEUR - product.priceEUR) / product.originalPriceEUR) * 100
@@ -127,9 +132,14 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                 title="Cliquer pour zoomer et agrandir en HD"
               >
                 <img
-                  src={product.image}
+                  src={modalImgSrc || product.image}
                   alt={product.name}
-                  referrerPolicy="no-referrer"
+                  onError={() => {
+                    const filename = (modalImgSrc || product.image).split('/').pop();
+                    if (filename && !modalImgSrc.startsWith('/images/')) {
+                      setModalImgSrc(`/images/${filename}`);
+                    }
+                  }}
                   className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
 
@@ -550,41 +560,32 @@ export const ProductModal: React.FC<ProductModalProps> = ({
                   <p className="text-[11px] text-zinc-500 dark:text-zinc-400 leading-relaxed pt-1 border-t border-zinc-200 dark:border-zinc-700">
                     Cette entreprise expédie directement ses produits via le hub logistique SoryOS pour garantir les délais et l'inspection de chaque unité.
                   </p>
-                  {onOpenChatWithProduct && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onClose();
-                        onOpenChatWithProduct(product);
-                      }}
-                      className="w-full mt-3 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs active:scale-98"
-                    >
-                      <MessageCircle className="w-4 h-4" />
-                      <span>Discuter avec le vendeur sur WhatsApp</span>
-                    </button>
-                  )}
+                  <a
+                    href={`https://wa.me/224621090388?text=${encodeURIComponent(`Bonjour SoryOS, je souhaite commander / poser une question sur : ${product.name} (Réf: ${product.id}, Prix: ${product.priceEUR} €).`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full mt-3 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs active:scale-98"
+                  >
+                    <MessageCircle className="w-4 h-4" />
+                    <span>Discuter sur WhatsApp officiel (+224 621 09 03 88)</span>
+                  </a>
                 </div>
               )}
             </div>
 
             {/* CTAs Box: 3 buttons with identical dimensions (equal 1/3 width, h-12) and clear labels */}
             <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800 flex flex-row items-center gap-2 sm:gap-3 w-full">
-              {onOpenChatWithProduct && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    onClose();
-                    onOpenChatWithProduct(product);
-                  }}
-                  className="flex-1 min-w-0 h-12 inline-flex items-center justify-center gap-1.5 px-2 sm:px-4 text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-2xl transition-all cursor-pointer shadow-md shadow-emerald-600/20 active:scale-98"
-                  title="Discuter de ce produit sur WhatsApp"
-                  aria-label="Discussion WhatsApp"
-                >
-                  <MessageCircle className="w-4 h-4 shrink-0" />
-                  <span className="hidden sm:inline">Discuter</span>
-                  <span className="sm:hidden truncate">Chat</span>
-                </button>
-              )}
+              <a
+                href={`https://wa.me/224621090388?text=${encodeURIComponent(`Bonjour SoryOS, je souhaite des infos ou commander l'article : ${product.name} (${product.priceEUR} €).`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 min-w-0 h-12 inline-flex items-center justify-center gap-1.5 px-2 sm:px-4 text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-2xl transition-all cursor-pointer shadow-md shadow-emerald-600/20 active:scale-98 text-center"
+                title="Discuter de ce produit sur WhatsApp officiel"
+                aria-label="Discussion WhatsApp"
+              >
+                <MessageCircle className="w-4 h-4 shrink-0" />
+                <span className="truncate">WhatsApp</span>
+              </a>
 
               <button
                 onClick={handleAddToCart}

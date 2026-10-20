@@ -162,7 +162,6 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
           <img
             src={activeImage}
             alt={productName}
-            referrerPolicy="no-referrer"
             className="max-w-[90vw] max-h-[72vh] object-contain rounded-xl shadow-2xl pointer-events-none"
           />
         </div>
@@ -191,7 +190,6 @@ export const ImageLightbox: React.FC<ImageLightboxProps> = ({
                 <img
                   src={img}
                   alt={`Vignette ${idx + 1}`}
-                  referrerPolicy="no-referrer"
                   className="w-full h-full object-cover"
                 />
               </button>

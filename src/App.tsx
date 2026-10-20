@@ -64,7 +64,21 @@ export default function App() {
       await initDB();
       const cachedCatalog = await getCatalog();
       if (cachedCatalog && cachedCatalog.length > 0) {
-        setProductsList(cachedCatalog);
+        // Reconcile with latest PRODUCTS to guarantee all image URLs are fresh and reachable,
+        // while preserving any live customer reviews added in the current session.
+        const merged = PRODUCTS.map((prod) => {
+          const cached = cachedCatalog.find((c: any) => c.id === prod.id);
+          if (cached) {
+            return {
+              ...prod,
+              reviews: (cached.reviews && cached.reviews.length > prod.reviews.length) ? cached.reviews : prod.reviews,
+              salesCount: cached.salesCount || prod.salesCount,
+            };
+          }
+          return prod;
+        });
+        setProductsList(merged);
+        saveCatalog(merged);
       } else {
         setProductsList(PRODUCTS);
         saveCatalog(PRODUCTS);
@@ -75,12 +89,8 @@ export default function App() {
         setWishlistIds(cachedFavorites.map(f => f.productId));
         setWishlistMetas(cachedFavorites.map(f => ({ productId: f.productId, listName: f.listName, note: f.note })));
       } else {
-        // Fallback initial
-        setWishlistIds(['aly-anc-900', 'aly-drone-4k']);
-        setWishlistMetas([
-          { productId: 'aly-anc-900', listName: 'Favoris Principaux', note: 'Casque haute fidélité pour voyage' },
-          { productId: 'aly-drone-4k', listName: 'Tech & Setup', note: 'Drone pro pour tournages' },
-        ]);
+        setWishlistIds([]);
+        setWishlistMetas([]);
       }
       setIsLoading(false);
     };
@@ -150,14 +160,19 @@ export default function App() {
     showToast(language === 'fr' ? "Paramètres du compte mis à jour avec succès !" : "Account settings updated successfully!");
   };
 
-  // Cart state
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      product: PRODUCTS[0],
-      variant: PRODUCTS[0].variants[0],
-      quantity: 1,
-    },
-  ]);
+  // Cart state - real customer items persisted to localStorage, starting clean
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('soryos_cart');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('soryos_cart', JSON.stringify(cartItems));
+  }, [cartItems]);
 
   // Modals and Drawers
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -205,31 +220,25 @@ export default function App() {
     code: '',
   });
 
-  const [orders, setOrders] = useState<Order[]>([
-    {
-      id: 'ORD-9124',
-      date: '10 mars 2026',
-      trackingNumber: 'LP892348921FR',
-      status: 'customs',
-      customer: {
-        fullName: 'Alexandre Laurent',
-        email: 'alexandre.laurent@example.com',
-        address: '14 Rue de la République',
-        city: 'Paris',
-        postalCode: '75001',
-      },
-      items: [
-        {
-          product: PRODUCTS[0],
-          variant: PRODUCTS[0].variants[0],
-          quantity: 1,
-        },
-      ],
-      totalEUR: 49.99,
-      currency: 'EUR',
-      estimatedDelivery: '16 mars 2026',
-    },
-  ]);
+  // Real customer orders persisted to localStorage
+  const [orders, setOrders] = useState<Order[]>(() => {
+    try {
+      const saved = localStorage.getItem('soryos_orders');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.filter((o: Order) => o.id !== 'ORD-9124' && o.customer?.fullName !== 'Alexandre Laurent');
+        }
+      }
+      return [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem('soryos_orders', JSON.stringify(orders));
+  }, [orders]);
 
   const [toasts, setToasts] = useState<ToastNotification[]>([]);
 

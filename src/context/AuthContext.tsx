@@ -25,7 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const GUEST_DEFAULT_USER: UserAccount = {
   ...INITIAL_USER,
   name: 'Invité SoryOS',
-  email: 'visiteur@soryos.store',
+  email: '',
   isGoogleUser: false,
 };
 
@@ -35,7 +35,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const cached = localStorage.getItem('soryos_user_account');
       if (cached) {
-        return JSON.parse(cached);
+        const parsed = JSON.parse(cached);
+        if (parsed && parsed.name !== 'Alexandre Laurent' && parsed.email !== 'alexandre.laurent@example.com') {
+          return parsed;
+        }
       }
     } catch {
       // ignore

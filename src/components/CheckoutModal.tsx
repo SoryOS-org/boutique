@@ -26,12 +26,12 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
   user,
   onOpenAccount,
 }) => {
-  const [fullName, setFullName] = useState(user?.name || 'Client SoryOS');
+  const [fullName, setFullName] = useState(user?.name && user.name !== 'Invité SoryOS' ? user.name : '');
   const [email, setEmail] = useState(user?.email || '');
-  const [address, setAddress] = useState(user?.savedAddresses?.[0]?.address || '14 rue de la République');
-  const [city, setCity] = useState(user?.savedAddresses?.[0]?.city || 'Paris');
-  const [postalCode, setPostalCode] = useState(user?.savedAddresses?.[0]?.postalCode || '75001');
-  const [phone, setPhone] = useState(user?.savedAddresses?.[0]?.phone || '+224 621 09 03 88');
+  const [address, setAddress] = useState(user?.savedAddresses?.[0]?.address || '');
+  const [city, setCity] = useState(user?.savedAddresses?.[0]?.city || '');
+  const [postalCode, setPostalCode] = useState(user?.savedAddresses?.[0]?.postalCode || '');
+  const [phone, setPhone] = useState(user?.savedAddresses?.[0]?.phone || '');
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'cod' | 'apple_pay'>('card');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [completedOrder, setCompletedOrder] = useState<Order | null>(null);

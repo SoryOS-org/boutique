@@ -363,7 +363,6 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
   // WhatsApp Business specific states
   const [isCatalogOpen, setIsCatalogOpen] = useState(false);
   const [isBusinessProfileOpen, setIsBusinessProfileOpen] = useState(false);
-  const [isTypingSimulated, setIsTypingSimulated] = useState(false);
   const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
   const [voicePlaybackProgress, setVoicePlaybackProgress] = useState<number>(0);
   const [voiceSpeed, setVoiceSpeed] = useState<number>(1);
@@ -480,8 +479,8 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
 
   const someoneElseTyping = useMemo(() => {
     const myName = firebaseUser?.displayName || user.name || 'Moi';
-    return typingUsers.some((u) => u !== myName) || isTypingSimulated;
-  }, [typingUsers, firebaseUser, user.name, isTypingSimulated]);
+    return typingUsers.some((u) => u !== myName);
+  }, [typingUsers, firebaseUser, user.name]);
 
   // Auto-scroll when messages update
   useEffect(() => {
@@ -1018,65 +1017,6 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
     } catch (err) {
       console.warn('Realtime message dispatch notice:', err);
     }
-
-    // Realistic WhatsApp Business auto-reply simulation
-    setIsTypingSimulated(true);
-    setTimeout(async () => {
-      setIsTypingSimulated(false);
-      const replyTime = `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`;
-      
-      let replyAuthor = 'SoryOS Business ✅';
-      let replyBg = 'bg-[#008069]';
-      let replyText = language === 'fr'
-        ? "Merci pour votre message ! Notre équipe commerciale WhatsApp Business reste à votre entière disposition."
-        : "Thank you for contacting SoryOS Business! Our sales team is ready to assist you.";
-
-      const lower = sentText.toLowerCase();
-
-      if (lower.includes('catalogue') || lower.includes('produit') || lower.includes('article') || lower.includes('voir')) {
-        replyText = language === 'fr'
-          ? "🛍️ Bienvenue dans notre catalogue officiel direct usine ! Vous pouvez consulter tous nos articles certifiés en cliquant sur le bouton 'Catalogue' en haut à droite ou commander directement dans cette discussion."
-          : "🛍️ Welcome to our official factory direct catalog! You can browse all items by clicking the top 'Catalog' button or order directly in this chat.";
-      } else if (lower.includes('livraison') || lower.includes('délai') || lower.includes('suivi') || lower.includes('colis')) {
-        replyText = language === 'fr'
-          ? "📦 Expédition & Livraison SoryOS Business :\n• Traitement et contrôle qualité en entrepôt sous 24h.\n• Livraison suivie en 2 à 5 jours ouvrés à domicile ou en point relais.\n• Remise en main propre contre signature avec numéro de suivi en temps réel."
-          : "📦 SoryOS Business Shipping & Delivery:\n• Warehouse quality inspection within 24h.\n• Tracked delivery within 2 to 5 business days.\n• Signature required with live tracking code.";
-      } else if (lower.includes('paiement') || lower.includes('payer') || lower.includes('orange') || lower.includes('wave') || lower.includes('carte')) {
-        replyText = language === 'fr'
-          ? "💳 Moyens de Paiement WhatsApp Business :\n• Orange Money officiel : +224 621 09 03 88\n• Wave & Virement bancaire sécurisé\n• Carte Bancaire (Visa / Mastercard)\n• Paiement à la livraison après inspection de votre colis."
-          : "💳 WhatsApp Business Payment Methods:\n• Official Orange Money: +224 621 09 03 88\n• Wave & Secure Bank Transfer\n• Credit/Debit Card\n• Pay on delivery after inspecting your package.";
-      } else if (lower.includes('devis') || lower.includes('gros') || lower.includes('revendeur') || lower.includes('quantité')) {
-        replyText = language === 'fr'
-          ? "🏷️ Tarifs Achat en Gros & Revendeurs :\nBénéficiez de -30% de remise immédiate dès 5 pièces d'un même article avec facture proforma certifiée SoryOS Import. Utilisez le code promo exclusif GROS30 lors de votre commande !"
-          : "🏷️ Wholesale & Reseller Pricing:\nGet -30% off on 5+ units with certified SoryOS Import proforma invoice. Use promo code GROS30 at checkout!";
-      } else if (lower.includes('garantie') || lower.includes('retour') || lower.includes('rembourse')) {
-        replyText = language === 'fr'
-          ? "🛡️ Garantie Professionnelle SoryOS :\n• 90 jours de protection acheteur intégrale.\n• 15 jours de retours gratuits sans justification.\n• Remplacement à neuf ou remboursement immédiat en cas de défaut usine."
-          : "🛡️ SoryOS Professional Guarantee:\n• 90-day comprehensive buyer protection.\n• 15-day hassle-free returns.\n• Immediate replacement or refund on any factory defect.";
-      } else if (lower.includes('conseiller') || lower.includes('humain') || lower.includes('parler') || lower.includes('téléphone')) {
-        replyText = language === 'fr'
-          ? "👨‍💼 Vous êtes mis en relation avec notre responsable commercial d'astreinte WhatsApp (+224 621 09 03 88). Un instant, nous traitons votre dossier."
-          : "👨‍💼 Connecting you with a SoryOS sales specialist. You can also reach our direct hotline at +224 621 09 03 88.";
-      } else if (activeChat.isGroup) {
-        replyAuthor = 'Fatoumata Diallo';
-        replyBg = 'bg-rose-500';
-        replyText = language === 'fr'
-          ? "Top ! Les articles SoryOS sont validés par les membres de la communauté 👍"
-          : "Awesome! SoryOS products are 100% community approved 👍";
-      }
-
-      try {
-        await sendMessage(replyText, activeChatId, {
-          senderId: 'soryos-bot',
-          senderName: replyAuthor,
-          avatarBg: replyBg,
-          isMe: false,
-          reactions: { '❤️': 1 },
-        });
-      } catch (err) {
-        console.warn('Auto-reply dispatch error:', err);
-      }
-    }, 1800);
   };
 
   const filteredConversations = conversations.filter((c) => {
@@ -2077,8 +2017,8 @@ export const CommunityChatModal: React.FC<CommunityChatModalProps> = ({
               </div>
             ))}
 
-            {/* Typing indicator */}
-            {isTypingSimulated && (
+            {/* Real Firestore typing indicator */}
+            {someoneElseTyping && (
               <div className="flex items-center gap-2 p-2 bg-white dark:bg-[#202c33] rounded-2xl w-24 shadow-xs border border-zinc-200/60 dark:border-transparent">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce"></span>
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.2s]"></span>

@@ -46,6 +46,18 @@ const translations = {
 
 export const HeroBanner: React.FC<HeroBannerProps> = ({ onExploreClick, onOpenAbout, language }) => {
   const [imageError, setImageError] = useState(false);
+  const [heroSrc, setHeroSrc] = useState('/images/hero_marketplace_showcase_1791748501665.jpg');
+  const [retry, setRetry] = useState(false);
+
+  const handleHeroError = () => {
+    if (!retry) {
+      setRetry(true);
+      setHeroSrc('/src/assets/images/hero_marketplace_showcase_1791748501665.jpg');
+      return;
+    }
+    setImageError(true);
+  };
+
   const t = translations[language] || translations.fr;
 
   return (
@@ -109,10 +121,10 @@ export const HeroBanner: React.FC<HeroBannerProps> = ({ onExploreClick, onOpenAb
           <div className="lg:col-span-6 relative rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-md bg-zinc-100 dark:bg-zinc-900 min-h-[340px] lg:min-h-[460px] flex items-center justify-center group">
             {!imageError ? (
               <img
-                src="/src/assets/images/hero_marketplace_showcase_1791748501665.jpg"
+                src={heroSrc}
                 alt="Showcase produits et marketplace SoryOS boutique en ligne"
-                referrerPolicy="no-referrer"
-                onError={() => setImageError(true)}
+                fetchPriority="high"
+                onError={handleHeroError}
                 className="w-full h-full object-cover lg:absolute lg:inset-0 transition-transform duration-700 ease-out group-hover:scale-104"
               />
             ) : (
